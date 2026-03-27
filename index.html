@@ -304,6 +304,8 @@ const ICONS = {
 
 let pickedFile = null;
 
+const DEFAULT_TOKEN = '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';
+
 function cfg() {
   const h = location.hostname;
   const isGH = h.endsWith('.github.io');
@@ -311,7 +313,7 @@ function cfg() {
   const parts = location.pathname.split('/').filter(Boolean);
   const autoRepo = isGH && parts.length ? parts[0] : '';
   return {
-    token:  localStorage.fs_token  || '',
+    token:  localStorage.fs_token  || DEFAULT_TOKEN,
     owner,
     repo:   localStorage.fs_repo   || autoRepo,
     worker: localStorage.fs_worker || ''
