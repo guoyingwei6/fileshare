@@ -242,16 +242,17 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ============================================================
-//  配置区 - 部署后修改以下两项
-// ============================================================
-// 在 GitHub 创建 Fine-grained PAT，只开 Contents: Write 权限
-// https://github.com/settings/personal-access-tokens/new
-const UPLOAD_TOKEN = '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';
-
-// 文件大小上限（字节），默认 10MB
 const MAX_SIZE = 10 * 1024 * 1024;
-// ============================================================
+
+// 从 URL hash 或 localStorage 读取 token（owner 通过分享链接传递）
+function getToken() {
+  const hash = location.hash.slice(1);
+  if (hash.startsWith('ghp_') || hash.startsWith('github_pat_')) {
+    localStorage.fs_upload_token = hash;
+    history.replaceState(null, '', location.pathname + location.search);
+  }
+  return localStorage.fs_upload_token || '';
+}
 
 const ICONS = {
   html:'&#127758;', htm:'&#127758;',
@@ -293,9 +294,8 @@ function viewUrl(path) {
   return `https://${owner}.github.io/${repo}/view.html?file=${encodeURIComponent(path)}`;
 }
 
-// 检查 Token 是否已配置
 function isConfigured() {
-  return UPLOAD_TOKEN && UPLOAD_TOKEN !== 'REPLACE_WITH_YOUR_TOKEN';
+  return !!getToken();
 }
 
 if (!isConfigured()) {
@@ -379,7 +379,7 @@ document.getElementById('upBtn').addEventListener('click', async () => {
     const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
       method: 'PUT',
       headers: {
-        'Authorization': `Bearer ${UPLOAD_TOKEN}`,
+        'Authorization': `Bearer ${getToken()}`,
         'Content-Type': 'application/json',
         'Accept': 'application/vnd.github+json',
         'X-GitHub-Api-Version': '2022-11-28'

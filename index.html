@@ -231,19 +231,14 @@
       <input type="text" id="repoIn" placeholder="fileshare">
       <div class="hint">留空则从 GitHub Pages URL 自动推断</div>
     </div>
-    <div class="fgrp">
-      <label>Worker URL（匿名上传接口）<span id="workerTag"></span></label>
-      <input type="text" id="workerIn" placeholder="https://fileshare-xxx.workers.dev/upload">
-      <div class="hint">部署 Cloudflare Worker 后填入，用于生成公开上传链接</div>
-    </div>
     <button class="btn-save" id="saveBtn">保存设置</button>
 
     <!-- Public upload link -->
     <div class="pub-box" id="pubBox" style="display:none">
-      <div class="pub-box-title">&#127760; 公开上传链接（可分享给任何人）</div>
+      <div class="pub-box-title">&#127760; 匿名上传链接（可分享给任何人，token 在 hash 中不被 GitHub 扫描）</div>
       <div class="pub-link-row">
         <input type="text" id="pubLink" readonly>
-        <button class="btn-cp-g" id="cpPubBtn">复制</button>
+        <button class="btn-cp-g" id="cpPubBtn">复制链接</button>
       </div>
     </div>
   </div>
@@ -304,8 +299,6 @@ const ICONS = {
 
 let pickedFile = null;
 
-const DEFAULT_TOKEN = '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';
-
 function cfg() {
   const h = location.hostname;
   const isGH = h.endsWith('.github.io');
@@ -313,10 +306,10 @@ function cfg() {
   const parts = location.pathname.split('/').filter(Boolean);
   const autoRepo = isGH && parts.length ? parts[0] : '';
   return {
-    token:  localStorage.fs_token  || DEFAULT_TOKEN,
+    token:  localStorage.fs_token  || '',
     owner,
     repo:   localStorage.fs_repo   || autoRepo,
-    worker: localStorage.fs_worker || ''
+    worker: ''
   };
 }
 
@@ -326,9 +319,9 @@ function viewUrl(path) {
 }
 
 function publicUploadUrl() {
-  const { owner, repo, worker } = cfg();
-  if (!owner || !repo || !worker) return '';
-  return `https://${owner}.github.io/${repo}/upload.html?api=${encodeURIComponent(worker)}`;
+  const { owner, repo, token } = cfg();
+  if (!owner || !repo || !token) return '';
+  return `https://${owner}.github.io/${repo}/upload.html#${token}`;
 }
 
 // ---- Settings ----
@@ -340,11 +333,6 @@ function refreshTags() {
   const tokTag = document.getElementById('tokTag');
   tokTag.className = t ? 'tag-ok' : 'tag-no';
   tokTag.textContent = t ? '&#10003; 已配置' : '未配置';
-
-  const w = localStorage.fs_worker;
-  const wTag = document.getElementById('workerTag');
-  wTag.className = w ? 'tag-ok' : 'tag-no';
-  wTag.textContent = w ? '&#10003; 已配置' : '未配置';
 
   const pubUrl = publicUploadUrl();
   const pubBox = document.getElementById('pubBox');
@@ -367,10 +355,8 @@ cfgBtn.addEventListener('click', () => {
 document.getElementById('saveBtn').addEventListener('click', () => {
   const t = document.getElementById('tokIn').value.trim();
   const r = document.getElementById('repoIn').value.trim();
-  const w = document.getElementById('workerIn').value.trim();
   if (t) localStorage.fs_token = t; else delete localStorage.fs_token;
   if (r) localStorage.fs_repo = r;  else delete localStorage.fs_repo;
-  if (w) localStorage.fs_worker = w; else delete localStorage.fs_worker;
   settingsEl.classList.remove('open');
   refreshTags();
   toast('设置已保存', 'ok');
