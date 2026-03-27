@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FileShare - 管理后台</title>
+  <title>FileShare</title>
   <style>
     :root {
       --primary: #4F46E5;
@@ -20,10 +20,8 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 28px 16px 60px;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 28px 16px 60px;
     }
     .wrap { max-width: 640px; margin: 0 auto; }
 
@@ -33,75 +31,26 @@
     }
     .logo { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
     .logo span { color: var(--primary); }
-    .logo small { font-size: 11px; font-weight: 500; color: var(--muted); margin-left: 6px; vertical-align: middle; }
-    .cfg-btn {
-      width: 38px; height: 38px;
-      border: 1.5px solid var(--border);
-      border-radius: 8px; background: var(--card);
-      cursor: pointer; font-size: 16px;
-      display: flex; align-items: center; justify-content: center;
+    .hdr-btns { display: flex; gap: 8px; }
+    .btn-icon {
+      height: 38px; padding: 0 14px;
+      border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--card); cursor: pointer;
+      font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 5px;
+      text-decoration: none; color: var(--text);
       transition: border-color .15s, color .15s;
     }
-    .cfg-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-icon:hover { border-color: var(--primary); color: var(--primary); }
 
     .card {
-      background: var(--card);
-      border: 1.5px solid var(--border);
-      border-radius: var(--r);
-      padding: 24px;
-      margin-bottom: 16px;
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: var(--r); padding: 24px; margin-bottom: 16px;
     }
     .sec-label {
-      font-size: 11px; font-weight: 700;
-      letter-spacing: .08em; text-transform: uppercase;
-      color: var(--muted); margin-bottom: 14px;
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
     }
-
-    /* Settings */
-    .settings { display: none; }
-    .settings.open { display: block; }
-    .fgrp { margin-bottom: 14px; }
-    .fgrp label {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 13px; font-weight: 600; margin-bottom: 5px;
-    }
-    .fgrp input {
-      width: 100%; padding: 9px 12px;
-      border: 1.5px solid var(--border); border-radius: 8px;
-      font-size: 14px; outline: none;
-      transition: border-color .15s;
-    }
-    .fgrp input:focus { border-color: var(--primary); }
-    .hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
-    .hint a { color: var(--primary); }
-    .tag-ok { font-size: 11px; color: var(--green); }
-    .tag-no { font-size: 11px; color: var(--red); }
-    .btn-save {
-      padding: 8px 20px; background: var(--primary); color: #fff;
-      border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
-      cursor: pointer; transition: background .15s;
-    }
-    .btn-save:hover { background: var(--primary-h); }
-
-    /* Public upload link box */
-    .pub-box {
-      background: #F0FDF4; border: 1.5px solid #BBF7D0;
-      border-radius: 8px; padding: 14px 16px; margin-top: 16px;
-    }
-    .pub-box-title { font-size: 12px; font-weight: 700; color: #166534; margin-bottom: 8px; }
-    .pub-link-row { display: flex; gap: 8px; }
-    .pub-link-row input {
-      flex: 1; padding: 7px 10px; font-size: 12px;
-      border: 1.5px solid #BBF7D0; border-radius: 6px;
-      background: #fff; color: var(--text); outline: none;
-    }
-    .btn-cp-g {
-      padding: 7px 14px; background: #16A34A; color: #fff;
-      border: none; border-radius: 6px; cursor: pointer;
-      font-size: 12px; font-weight: 600; white-space: nowrap;
-      transition: background .15s;
-    }
-    .btn-cp-g:hover { background: #15803D; }
 
     /* Dropzone */
     .dropzone {
@@ -110,13 +59,8 @@
       text-align: center; cursor: pointer;
       transition: border-color .2s, background .2s;
     }
-    .dropzone:hover, .dropzone.over {
-      border-color: var(--primary); background: #EEF2FF;
-    }
-    .dropzone input {
-      position: absolute; inset: 0; opacity: 0;
-      cursor: pointer; width: 100%; height: 100%;
-    }
+    .dropzone:hover, .dropzone.over { border-color: var(--primary); background: #EEF2FF; }
+    .dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
     .dz-icon { font-size: 44px; margin-bottom: 10px; }
     .dz-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
     .dz-hint { font-size: 13px; color: var(--muted); }
@@ -137,24 +81,22 @@
       display: none; width: 100%; padding: 12px;
       background: var(--primary); color: #fff;
       border: none; border-radius: 8px;
-      font-size: 15px; font-weight: 700;
-      cursor: pointer; margin-top: 14px;
+      font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 14px;
       transition: background .15s;
     }
     .btn-upload.show { display: block; }
     .btn-upload:hover { background: var(--primary-h); }
     .btn-upload:disabled { opacity: .55; cursor: not-allowed; }
 
-    .prog { display: none; height: 4px; background: var(--border); border-radius: 2px; margin-top: 12px; overflow: hidden; }
+    .prog { display: none; margin-top: 12px; }
     .prog.show { display: block; }
-    .prog-fill { height: 100%; background: var(--primary); width: 0%; transition: width .4s ease; border-radius: 2px; }
+    .prog-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--primary); width: 0%; transition: width .4s ease; border-radius: 3px; }
+    .prog-label { font-size: 12px; color: var(--muted); margin-top: 5px; }
 
     .result { display: none; margin-top: 14px; }
     .result.show { display: block; }
-    .result-box {
-      background: #ECFDF5; border: 1.5px solid #6EE7B7;
-      border-radius: 8px; padding: 14px 16px;
-    }
+    .result-box { background: #ECFDF5; border: 1.5px solid #6EE7B7; border-radius: 8px; padding: 14px 16px; }
     .result-title { font-size: 13px; font-weight: 700; color: #065F46; margin-bottom: 10px; }
     .link-row { display: flex; gap: 8px; }
     .link-row input {
@@ -169,7 +111,6 @@
       transition: background .15s;
     }
     .btn-cp:hover { background: #047857; }
-    .result-note { font-size: 11px; color: #065F46; margin-top: 8px; opacity: .75; }
 
     /* History */
     .hist-list { list-style: none; }
@@ -191,6 +132,7 @@
       text-decoration: none; color: var(--text);
     }
     .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
+
     .empty { text-align: center; padding: 20px; color: var(--muted); font-size: 13px; }
 
     .toast {
@@ -209,47 +151,20 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">File<span>Share</span> <small>管理员</small></div>
-    <button class="cfg-btn" id="cfgBtn" title="配置">&#9881;</button>
+    <div class="logo">File<span>Share</span></div>
+    <div class="hdr-btns">
+      <a class="btn-icon" href="admin.html">&#128202; 管理</a>
+      <a class="btn-icon" href="upload.html">&#127760; 分享上传页</a>
+    </div>
   </header>
-
-  <!-- Settings -->
-  <div class="card settings" id="settings">
-    <div class="sec-label">GitHub 配置</div>
-    <div class="fgrp">
-      <label>
-        Personal Access Token
-        <span id="tokTag"></span>
-      </label>
-      <input type="password" id="tokIn" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off">
-      <div class="hint">需要 <code>repo</code> 权限。
-        <a href="https://github.com/settings/tokens/new?scopes=repo&description=FileShare" target="_blank">点此创建</a>
-      </div>
-    </div>
-    <div class="fgrp">
-      <label>仓库名称</label>
-      <input type="text" id="repoIn" placeholder="fileshare">
-      <div class="hint">留空则从 GitHub Pages URL 自动推断</div>
-    </div>
-    <button class="btn-save" id="saveBtn">保存设置</button>
-
-    <!-- Public upload link -->
-    <div class="pub-box" id="pubBox" style="display:none">
-      <div class="pub-box-title">&#127760; 匿名上传链接（无需 token，任何人可用）</div>
-      <div class="pub-link-row">
-        <input type="text" id="pubLink" readonly>
-        <button class="btn-cp-g" id="cpPubBtn">复制链接</button>
-      </div>
-    </div>
-  </div>
 
   <!-- Upload -->
   <div class="card">
     <div class="dropzone" id="dz">
-      <input type="file" id="fileIn" accept=".html,.htm,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp,.txt,.csv,.md,.json">
+      <input type="file" id="fileIn">
       <div class="dz-icon">&#128193;</div>
       <div class="dz-title">拖放文件，或点击选择</div>
-      <div class="dz-hint">支持 HTML &middot; Office &middot; PDF &middot; 图片 &middot; 文本（最大 50MB）</div>
+      <div class="dz-hint">支持所有格式 &middot; 最大 200MB</div>
     </div>
 
     <div class="sel-file" id="selFile">
@@ -262,7 +177,10 @@
     </div>
 
     <button class="btn-upload" id="upBtn">上传文件</button>
-    <div class="prog" id="prog"><div class="prog-fill" id="progFill"></div></div>
+    <div class="prog" id="prog">
+      <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+      <div class="prog-label" id="progLabel">上传中...</div>
+    </div>
 
     <div class="result" id="result">
       <div class="result-box">
@@ -271,14 +189,13 @@
           <input type="text" id="resLink" readonly>
           <button class="btn-cp" id="cpBtn">复制链接</button>
         </div>
-        <div class="result-note">GitHub Pages 部署通常需要 1~3 分钟，之后链接即可访问</div>
       </div>
     </div>
   </div>
 
   <!-- History -->
   <div class="card">
-    <div class="sec-label">上传历史</div>
+    <div class="sec-label">上传历史（本设备）</div>
     <ul class="hist-list" id="histList"></ul>
   </div>
 </div>
@@ -286,103 +203,39 @@
 <div class="toast" id="toast"></div>
 
 <script>
+// ── 配置 ──────────────────────────────────────────
+const WORKER   = 'https://fileshare-r2.guoyingwei6.workers.dev';
+const ADMIN_KEY = '463d947a4db50514e5ac941c228d4a28';
+// ─────────────────────────────────────────────────
+
 const ICONS = {
   html:'&#127758;', htm:'&#127758;',
-  doc:'&#128196;', docx:'&#128196;',
-  xls:'&#128202;', xlsx:'&#128202;',
-  ppt:'&#127909;', pptx:'&#127909;',
+  doc:'&#128196;',  docx:'&#128196;',
+  xls:'&#128202;',  xlsx:'&#128202;',
+  ppt:'&#127909;',  pptx:'&#127909;',
   pdf:'&#128211;',
-  jpg:'&#128247;', jpeg:'&#128247;', png:'&#128247;', gif:'&#128247;',
-  webp:'&#128247;', svg:'&#128247;', bmp:'&#128247;',
+  jpg:'&#128247;', jpeg:'&#128247;', png:'&#128247;',
+  gif:'&#128247;', webp:'&#128247;', svg:'&#128247;', bmp:'&#128247;',
   txt:'&#128203;', csv:'&#128203;', md:'&#128203;', json:'&#128203;'
 };
 
 let pickedFile = null;
 
-function cfg() {
-  const h = location.hostname;
-  const isGH = h.endsWith('.github.io');
-  const owner = isGH ? h.replace('.github.io', '') : '';
-  const parts = location.pathname.split('/').filter(Boolean);
-  const autoRepo = isGH && parts.length ? parts[0] : '';
-  return {
-    token:  localStorage.fs_token  || '',
-    owner,
-    repo:   localStorage.fs_repo   || autoRepo,
-    worker: ''
-  };
-}
-
-function viewUrl(path) {
-  const { owner, repo } = cfg();
-  return `https://${owner}.github.io/${repo}/view.html?file=${encodeURIComponent(path)}`;
-}
-
-function publicUploadUrl() {
-  const { owner, repo } = cfg();
-  if (!owner || !repo) return '';
-  return `https://${owner}.github.io/${repo}/upload.html`;
-}
-
-// ---- Settings ----
-const cfgBtn = document.getElementById('cfgBtn');
-const settingsEl = document.getElementById('settings');
-
-function refreshTags() {
-  const t = localStorage.fs_token;
-  const tokTag = document.getElementById('tokTag');
-  tokTag.className = t ? 'tag-ok' : 'tag-no';
-  tokTag.textContent = t ? '&#10003; 已配置' : '未配置';
-
-  const pubUrl = publicUploadUrl();
-  const pubBox = document.getElementById('pubBox');
-  if (pubUrl) {
-    pubBox.style.display = '';
-    document.getElementById('pubLink').value = pubUrl;
-  } else {
-    pubBox.style.display = 'none';
-  }
-}
-
-cfgBtn.addEventListener('click', () => {
-  settingsEl.classList.toggle('open');
-  document.getElementById('tokIn').value = localStorage.fs_token || '';
-  document.getElementById('repoIn').value = localStorage.fs_repo || '';
-  document.getElementById('workerIn').value = localStorage.fs_worker || '';
-  refreshTags();
-});
-
-document.getElementById('saveBtn').addEventListener('click', () => {
-  const t = document.getElementById('tokIn').value.trim();
-  const r = document.getElementById('repoIn').value.trim();
-  if (t) localStorage.fs_token = t; else delete localStorage.fs_token;
-  if (r) localStorage.fs_repo = r;  else delete localStorage.fs_repo;
-  settingsEl.classList.remove('open');
-  refreshTags();
-  toast('设置已保存', 'ok');
-});
-
-document.getElementById('cpPubBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(document.getElementById('pubLink').value)
-    .then(() => toast('公开上传链接已复制', 'ok'));
-});
-
-// ---- File pick ----
 function ext(name) { return name.split('.').pop().toLowerCase(); }
+function icon(name) { return ICONS[ext(name)] || '&#128196;'; }
 function fmtSize(b) {
   if (b < 1024) return b + ' B';
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
   return (b/1048576).toFixed(1) + ' MB';
 }
+function viewUrl(fileUrl) {
+  return location.origin + '/view.html?url=' + encodeURIComponent(fileUrl);
+}
 
-const ADMIN_MAX = 50 * 1024 * 1024;
-
+// ── File pick ──
 function pick(file) {
-  const e = ext(file.name);
-  if (!ICONS[e]) { toast('不支持的文件类型', 'err'); return; }
-  if (file.size > ADMIN_MAX) { toast('文件超过 50MB 限制', 'err'); return; }
   pickedFile = file;
-  document.getElementById('selIcon').innerHTML = ICONS[e];
+  document.getElementById('selIcon').innerHTML = icon(file.name);
   document.getElementById('selName').textContent = file.name;
   document.getElementById('selSize').textContent = fmtSize(file.size);
   document.getElementById('selFile').classList.add('show');
@@ -390,18 +243,11 @@ function pick(file) {
   document.getElementById('result').classList.remove('show');
 }
 
-document.getElementById('fileIn').addEventListener('change', e => {
-  if (e.target.files[0]) pick(e.target.files[0]);
-});
-
+document.getElementById('fileIn').addEventListener('change', e => { if (e.target.files[0]) pick(e.target.files[0]); });
 const dz = document.getElementById('dz');
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
 dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-dz.addEventListener('drop', e => {
-  e.preventDefault(); dz.classList.remove('over');
-  if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]);
-});
-
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); });
 document.getElementById('rmBtn').addEventListener('click', () => {
   pickedFile = null;
   document.getElementById('selFile').classList.remove('show');
@@ -409,64 +255,36 @@ document.getElementById('rmBtn').addEventListener('click', () => {
   document.getElementById('fileIn').value = '';
 });
 
-// ---- Upload ----
-function b64(file) {
-  return new Promise((res, rej) => {
-    const r = new FileReader();
-    r.onload = () => res(r.result.split(',')[1]);
-    r.onerror = rej;
-    r.readAsDataURL(file);
-  });
-}
-
+// ── Upload ──
 document.getElementById('upBtn').addEventListener('click', async () => {
   if (!pickedFile) return;
-  const { token, owner, repo } = cfg();
-  if (!token) { toast('请先配置 GitHub Token', 'err'); settingsEl.classList.add('open'); return; }
-  if (!owner || !repo) { toast('无法检测仓库信息，请在设置中填写仓库名', 'err'); settingsEl.classList.add('open'); return; }
 
   const btn = document.getElementById('upBtn');
   btn.disabled = true; btn.textContent = '上传中...';
   const prog = document.getElementById('prog');
   prog.classList.add('show');
   document.getElementById('progFill').style.width = '20%';
+  document.getElementById('progLabel').textContent = '上传到 R2...';
 
   try {
-    const content = await b64(pickedFile);
-    document.getElementById('progFill').style.width = '55%';
+    const fd = new FormData();
+    fd.append('file', pickedFile);
+    fd.append('adminKey', ADMIN_KEY);
 
-    const ts = Date.now();
-    const safe = pickedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const path = `files/${ts}_${safe}`;
-
-    const resp = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28'
-      },
-      body: JSON.stringify({ message: `Upload ${pickedFile.name}`, content })
-    });
-
+    const resp = await fetch(WORKER + '/upload', { method: 'POST', body: fd });
     document.getElementById('progFill').style.width = '100%';
 
-    if (!resp.ok) {
-      const err = await resp.json();
-      throw new Error(err.message || `HTTP ${resp.status}`);
-    }
+    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`); }
+    const { url } = await resp.json();
+    const vUrl = viewUrl(url);
 
-    const url = viewUrl(path);
-    document.getElementById('resLink').value = url;
+    document.getElementById('resLink').value = vUrl;
     document.getElementById('result').classList.add('show');
-    saveHist({ name: pickedFile.name, path, url, size: pickedFile.size, date: new Date().toISOString() });
+    saveHist({ name: pickedFile.name, url: vUrl, size: pickedFile.size, date: new Date().toISOString() });
     renderHist();
     toast('上传成功！', 'ok');
-
   } catch (e) {
     toast('上传失败：' + e.message, 'err');
-    document.getElementById('progFill').style.width = '0%';
   } finally {
     btn.disabled = false; btn.textContent = '上传文件';
     setTimeout(() => { prog.classList.remove('show'); document.getElementById('progFill').style.width = '0%'; }, 800);
@@ -474,17 +292,14 @@ document.getElementById('upBtn').addEventListener('click', async () => {
 });
 
 document.getElementById('cpBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(document.getElementById('resLink').value)
-    .then(() => toast('链接已复制', 'ok'));
+  navigator.clipboard.writeText(document.getElementById('resLink').value).then(() => toast('链接已复制', 'ok'));
 });
 
-// ---- History ----
-function loadHist() {
-  try { return JSON.parse(localStorage.fs_hist || '[]'); } catch { return []; }
-}
+// ── History ──
+function loadHist() { try { return JSON.parse(localStorage.fs_hist || '[]'); } catch { return []; } }
 function saveHist(item) {
   const h = loadHist(); h.unshift(item);
-  if (h.length > 100) h.splice(100);
+  if (h.length > 200) h.splice(200);
   localStorage.fs_hist = JSON.stringify(h);
 }
 function renderHist() {
@@ -492,37 +307,28 @@ function renderHist() {
   const ul = document.getElementById('histList');
   if (!h.length) { ul.innerHTML = '<li class="empty">暂无上传记录</li>'; return; }
   ul.innerHTML = h.map(it => {
-    const e = ext(it.name);
-    const ic = ICONS[e] || '&#128196;';
     const dt = new Date(it.date).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
     return `<li class="hist-item">
-      <span class="hist-icon">${ic}</span>
+      <span class="hist-icon">${icon(it.name)}</span>
       <div class="hist-info">
         <div class="hist-name" title="${it.name}">${it.name}</div>
         <div class="hist-meta">${dt} &middot; ${fmtSize(it.size)}</div>
       </div>
       <div class="hist-btns">
-        <button class="btn-sm" onclick="cpLink('${it.url}')">复制</button>
+        <button class="btn-sm" onclick="navigator.clipboard.writeText('${it.url}').then(()=>toast('已复制','ok'))">复制</button>
         <a class="btn-sm" href="${it.url}" target="_blank">查看</a>
       </div>
     </li>`;
   }).join('');
 }
 
-function cpLink(url) {
-  navigator.clipboard.writeText(url).then(() => toast('链接已复制', 'ok'));
-}
-
-// ---- Toast ----
-function toast(msg, type='') {
+// ── Toast ──
+function toast(msg, type = '') {
   const el = document.getElementById('toast');
-  el.innerHTML = msg; el.className = `toast ${type} show`;
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), 2800);
+  el.textContent = msg; el.className = `toast ${type} show`;
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2800);
 }
 
-// ---- Init ----
-refreshTags();
 renderHist();
 </script>
 </body>

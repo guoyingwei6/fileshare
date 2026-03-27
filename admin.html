@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FileShare - 管理</title>
+  <style>
+    :root {
+      --primary: #4F46E5; --primary-h: #4338CA;
+      --bg: #F3F4F6; --card: #FFFFFF; --border: #E5E7EB;
+      --text: #111827; --muted: #6B7280;
+      --green: #10B981; --red: #EF4444; --r: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 28px 16px 60px;
+    }
+    .wrap { max-width: 860px; margin: 0 auto; }
+
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 28px;
+    }
+    .logo { font-size: 22px; font-weight: 800; letter-spacing: -.5px; }
+    .logo span { color: var(--primary); }
+    .logo a { color: inherit; text-decoration: none; }
+    .hdr-right { display: flex; align-items: center; gap: 10px; }
+    .badge-login { font-size: 12px; color: var(--green); font-weight: 600; }
+    .badge-logout { font-size: 12px; color: var(--muted); }
+    .btn-sm-hdr {
+      padding: 7px 14px; border: 1.5px solid var(--border);
+      border-radius: 8px; background: var(--card);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      text-decoration: none; color: var(--text);
+      transition: border-color .15s, color .15s;
+    }
+    .btn-sm-hdr:hover { border-color: var(--primary); color: var(--primary); }
+
+    .card {
+      background: var(--card); border: 1.5px solid var(--border);
+      border-radius: var(--r); padding: 24px; margin-bottom: 16px;
+    }
+    .sec-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
+    }
+
+    /* Login panel */
+    .login-panel { max-width: 400px; margin: 60px auto; }
+    .login-panel .card { text-align: center; padding: 36px; }
+    .login-icon { font-size: 48px; margin-bottom: 16px; }
+    .login-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .login-sub { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+    .fgrp { margin-bottom: 14px; text-align: left; }
+    .fgrp label { font-size: 13px; font-weight: 600; display: block; margin-bottom: 5px; }
+    .fgrp input {
+      width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 14px; outline: none; transition: border-color .15s;
+    }
+    .fgrp input:focus { border-color: var(--primary); }
+    .btn-login {
+      width: 100%; padding: 12px; background: var(--primary); color: #fff;
+      border: none; border-radius: 8px; font-size: 15px; font-weight: 700;
+      cursor: pointer; transition: background .15s;
+    }
+    .btn-login:hover { background: var(--primary-h); }
+
+    /* File table */
+    .toolbar {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .search-box {
+      flex: 1; min-width: 180px;
+      padding: 8px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 14px; outline: none;
+      transition: border-color .15s;
+    }
+    .search-box:focus { border-color: var(--primary); }
+    .count-badge {
+      font-size: 12px; color: var(--muted); white-space: nowrap;
+    }
+
+    .file-grid { display: grid; gap: 10px; }
+    .file-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border: 1.5px solid var(--border);
+      border-radius: 10px; background: var(--card);
+      transition: border-color .15s;
+    }
+    .file-card:hover { border-color: #D1D5DB; }
+    .file-card-icon { font-size: 24px; flex-shrink: 0; }
+    .file-card-info { flex: 1; min-width: 0; }
+    .file-card-name {
+      font-size: 14px; font-weight: 500;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .file-card-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .file-card-btns { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-action {
+      padding: 5px 10px; border: 1.5px solid var(--border);
+      border-radius: 6px; background: var(--card);
+      font-size: 11px; font-weight: 600; cursor: pointer;
+      transition: border-color .15s, color .15s;
+      text-decoration: none; color: var(--text); white-space: nowrap;
+    }
+    .btn-action:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-del:hover { border-color: var(--red); color: var(--red); }
+
+    .empty-state {
+      text-align: center; padding: 48px 20px; color: var(--muted);
+    }
+    .empty-state-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-state-msg { font-size: 14px; }
+
+    .loading {
+      text-align: center; padding: 40px; color: var(--muted); font-size: 14px;
+    }
+
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      padding: 10px 22px; border-radius: 8px;
+      font-size: 14px; font-weight: 500;
+      background: var(--text); color: #fff;
+      transition: transform .25s; z-index: 999; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.ok { background: var(--green); }
+    .toast.err { background: var(--red); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo"><a href="index.html">File<span>Share</span></a> <small style="font-size:13px;font-weight:500;color:var(--muted)">管理</small></div>
+    <div class="hdr-right">
+      <span id="loginBadge" class="badge-logout">未登录（仅显示本地历史）</span>
+      <button class="btn-sm-hdr" id="logoutBtn" style="display:none">退出</button>
+      <a class="btn-sm-hdr" href="index.html">&#8592; 返回上传</a>
+    </div>
+  </header>
+
+  <!-- Login panel (shown when not logged in) -->
+  <div class="login-panel" id="loginPanel">
+    <div class="card">
+      <div class="login-icon">&#128274;</div>
+      <div class="login-title">输入管理密钥</div>
+      <div class="login-sub">登录后可查看所有上传文件并进行管理<br>未登录只显示本设备上传历史</div>
+      <div class="fgrp">
+        <label>Admin Key</label>
+        <input type="password" id="keyInput" placeholder="输入管理密钥" autocomplete="off">
+      </div>
+      <button class="btn-login" id="loginBtn">登录</button>
+    </div>
+    <!-- Local history (no login needed) -->
+    <div class="card" style="margin-top:16px" id="localCard">
+      <div class="sec-label">本设备上传历史</div>
+      <div id="localList"></div>
+    </div>
+  </div>
+
+  <!-- File manager (shown when logged in) -->
+  <div id="managerPanel" style="display:none">
+    <div class="card">
+      <div class="toolbar">
+        <input type="text" class="search-box" id="searchBox" placeholder="搜索文件名...">
+        <span class="count-badge" id="countBadge"></span>
+        <button class="btn-sm-hdr" id="refreshBtn">&#8635; 刷新</button>
+      </div>
+      <div id="fileGrid" class="file-grid">
+        <div class="loading">加载中...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://fileshare-r2.guoyingwei6.workers.dev';
+
+const ICONS = {
+  html:'&#127758;', htm:'&#127758;',
+  doc:'&#128196;', docx:'&#128196;',
+  xls:'&#128202;', xlsx:'&#128202;',
+  ppt:'&#127909;', pptx:'&#127909;',
+  pdf:'&#128211;',
+  jpg:'&#128247;', jpeg:'&#128247;', png:'&#128247;',
+  gif:'&#128247;', webp:'&#128247;', svg:'&#128247;', bmp:'&#128247;',
+  txt:'&#128203;', csv:'&#128203;', md:'&#128203;', json:'&#128203;'
+};
+
+function ext(name) { return name.split('.').pop().toLowerCase(); }
+function icon(name) { return ICONS[ext(name)] || '&#128196;'; }
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+function viewUrl(fileUrl) {
+  return location.origin + '/view.html?url=' + encodeURIComponent(fileUrl);
+}
+
+let adminKey = localStorage.fs_admin_key || '';
+let allFiles = [];
+
+// ── Init ──
+function init() {
+  renderLocalHistory();
+  if (adminKey) {
+    loginWithKey(adminKey);
+  }
+}
+
+// ── Login ──
+document.getElementById('loginBtn').addEventListener('click', () => {
+  const key = document.getElementById('keyInput').value.trim();
+  if (!key) return;
+  loginWithKey(key);
+});
+
+document.getElementById('keyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginBtn').click();
+});
+
+async function loginWithKey(key) {
+  try {
+    const resp = await fetch(WORKER + '/files', {
+      headers: { 'X-Admin-Key': key }
+    });
+    if (!resp.ok) { toast('密钥错误', 'err'); return; }
+    const { files } = await resp.json();
+    adminKey = key;
+    localStorage.fs_admin_key = key;
+    allFiles = files;
+    showManager();
+  } catch (e) {
+    toast('连接失败：' + e.message, 'err');
+  }
+}
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  adminKey = '';
+  delete localStorage.fs_admin_key;
+  document.getElementById('loginPanel').style.display = '';
+  document.getElementById('managerPanel').style.display = 'none';
+  document.getElementById('loginBadge').textContent = '未登录（仅显示本地历史）';
+  document.getElementById('loginBadge').className = 'badge-logout';
+  document.getElementById('logoutBtn').style.display = 'none';
+});
+
+// ── Manager ──
+function showManager() {
+  document.getElementById('loginPanel').style.display = 'none';
+  document.getElementById('managerPanel').style.display = '';
+  document.getElementById('loginBadge').textContent = '&#10003; 已登录';
+  document.getElementById('loginBadge').className = 'badge-login';
+  document.getElementById('logoutBtn').style.display = '';
+  renderFiles(allFiles);
+}
+
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  try {
+    const resp = await fetch(WORKER + '/files', { headers: { 'X-Admin-Key': adminKey } });
+    const { files } = await resp.json();
+    allFiles = files;
+    renderFiles(filterFiles(document.getElementById('searchBox').value));
+    toast('已刷新', 'ok');
+  } catch (e) { toast('刷新失败', 'err'); }
+});
+
+document.getElementById('searchBox').addEventListener('input', e => {
+  renderFiles(filterFiles(e.target.value));
+});
+
+function filterFiles(q) {
+  if (!q) return allFiles;
+  return allFiles.filter(f => f.name.toLowerCase().includes(q.toLowerCase()));
+}
+
+function renderFiles(files) {
+  const grid = document.getElementById('fileGrid');
+  document.getElementById('countBadge').textContent = `共 ${files.length} 个文件`;
+
+  if (!files.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">&#128202;</div><div class="empty-state-msg">没有文件</div></div>`;
+    return;
+  }
+
+  grid.innerHTML = files.map(f => {
+    const fileUrl = `${WORKER}/files/${f.key}`;
+    const vUrl = viewUrl(fileUrl);
+    const dt = new Date(f.uploaded).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return `<div class="file-card">
+      <span class="file-card-icon">${icon(f.name)}</span>
+      <div class="file-card-info">
+        <div class="file-card-name" title="${f.name}">${f.name}</div>
+        <div class="file-card-meta">${dt} &middot; ${fmtSize(f.size)}</div>
+      </div>
+      <div class="file-card-btns">
+        <button class="btn-action" onclick="copyLink('${vUrl}')">复制链接</button>
+        <a class="btn-action" href="${vUrl}" target="_blank">查看</a>
+        <a class="btn-action" href="${fileUrl}?dl=1" download="${f.name}">下载</a>
+        <button class="btn-action btn-del" onclick="deleteFile('${f.key}', this)">删除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function deleteFile(key, btn) {
+  if (!confirm(`确定删除此文件？`)) return;
+  btn.disabled = true; btn.textContent = '删除中...';
+  try {
+    const resp = await fetch(`${WORKER}/files/${key}`, {
+      method: 'DELETE',
+      headers: { 'X-Admin-Key': adminKey }
+    });
+    if (!resp.ok) throw new Error('删除失败');
+    allFiles = allFiles.filter(f => f.key !== key);
+    renderFiles(filterFiles(document.getElementById('searchBox').value));
+    toast('已删除', 'ok');
+  } catch (e) {
+    toast(e.message, 'err');
+    btn.disabled = false; btn.textContent = '删除';
+  }
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => toast('链接已复制', 'ok'));
+}
+
+// ── Local history (no login) ──
+function renderLocalHistory() {
+  let hist = [];
+  try { hist = JSON.parse(localStorage.fs_hist || '[]'); } catch {}
+  const el = document.getElementById('localList');
+  if (!hist.length) { el.innerHTML = '<p style="font-size:13px;color:var(--muted);text-align:center;padding:16px">暂无记录</p>'; return; }
+  el.innerHTML = hist.slice(0, 20).map(it => {
+    const dt = new Date(it.date).toLocaleString('zh-CN', { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    return `<div class="file-card" style="margin-bottom:8px">
+      <span class="file-card-icon">${icon(it.name)}</span>
+      <div class="file-card-info">
+        <div class="file-card-name">${it.name}</div>
+        <div class="file-card-meta">${dt} &middot; ${fmtSize(it.size)}</div>
+      </div>
+      <div class="file-card-btns">
+        <button class="btn-action" onclick="copyLink('${it.url}')">复制</button>
+        <a class="btn-action" href="${it.url}" target="_blank">查看</a>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Toast ──
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.innerHTML = msg; el.className = `toast ${type} show`;
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+init();
+</script>
+</body>
+</html>

@@ -166,12 +166,13 @@ const EXT_MAP = {
 function ext(name) { return name.split('.').pop().toLowerCase(); }
 
 function getCtx() {
+  const file = new URLSearchParams(location.search).get('file') || '';
+  // legacy GitHub Pages support
   const h = location.hostname;
   const isGH = h.endsWith('.github.io');
   const owner = isGH ? h.replace('.github.io', '') : '';
   const parts = location.pathname.split('/').filter(Boolean);
   const repo = isGH && parts.length ? parts[0] : '';
-  const file = new URLSearchParams(location.search).get('file') || '';
   return { owner, repo, file };
 }
 
@@ -200,8 +201,8 @@ function init() {
   const { owner, repo, file } = getCtx();
   const base = owner && repo ? `https://${owner}.github.io/${repo}` : '';
 
-  document.getElementById('homeLink').href = base || '/';
-  document.getElementById('upLink').href = base ? base + '/upload.html' : 'upload.html';
+  document.getElementById('homeLink').href = '/';
+  document.getElementById('upLink').href = '/upload.html';
 
   // Support ?url= (external, e.g. catbox.moe) or ?file= (GitHub repo path)
   const urlParam = new URLSearchParams(location.search).get('url');
