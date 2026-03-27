@@ -203,28 +203,42 @@ function init() {
   document.getElementById('homeLink').href = base || '/';
   document.getElementById('upLink').href = base ? base + '/upload.html' : 'upload.html';
 
-  if (!file) {
+  // Support ?url= (external, e.g. catbox.moe) or ?file= (GitHub repo path)
+  const urlParam = new URLSearchParams(location.search).get('url');
+
+  if (!file && !urlParam) {
     showState('&#10060;', '缺少文件参数', '请通过正确的分享链接访问');
     return;
   }
 
-  const filename = file.split('/').pop();
-  const e = ext(filename);
+  // Resolve actual URLs
+  let rawUrl, pagesUrl, displayName;
+
+  if (urlParam) {
+    // External URL (catbox.moe, etc.)
+    rawUrl = urlParam;
+    pagesUrl = urlParam;
+    displayName = urlParam.split('/').pop().split('?')[0];
+  } else {
+    // GitHub Pages path
+    const filename = file.split('/').pop();
+    displayName = filename.replace(/^\d+_/, '');
+    rawUrl = owner && repo
+      ? `https://raw.githubusercontent.com/${owner}/${repo}/main/${file}`
+      : file;
+    pagesUrl = owner && repo
+      ? `https://${owner}.github.io/${repo}/${file}`
+      : file;
+  }
+
+  const e = ext(displayName);
   const info = EXT_MAP[e];
-  const displayName = filename.replace(/^\d+_/, '');
 
   document.getElementById('barName').textContent = displayName;
   document.title = displayName + ' - FileShare';
 
   const badge = document.getElementById('barBadge');
   if (info) { badge.textContent = info.label; badge.className = 'badge ' + info.badge; }
-
-  const rawUrl = owner && repo
-    ? `https://raw.githubusercontent.com/${owner}/${repo}/main/${file}`
-    : file;
-  const pagesUrl = owner && repo
-    ? `https://${owner}.github.io/${repo}/${file}`
-    : file;
 
   const dlBtn = document.getElementById('dlBtn');
   dlBtn.href = rawUrl;
@@ -243,10 +257,10 @@ function init() {
       loadIframe('https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(rawUrl), false);
       break;
     case 'pdf':
-      loadIframe(pagesUrl, true);
+      loadIframe(rawUrl, true);
       break;
     case 'image':
-      showImage(pagesUrl, displayName);
+      showImage(rawUrl, displayName);
       break;
     case 'text':
       loadText(rawUrl);

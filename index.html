@@ -235,7 +235,7 @@
 
     <!-- Public upload link -->
     <div class="pub-box" id="pubBox" style="display:none">
-      <div class="pub-box-title">&#127760; 匿名上传链接（可分享给任何人，token 在 hash 中不被 GitHub 扫描）</div>
+      <div class="pub-box-title">&#127760; 匿名上传链接（无需 token，任何人可用）</div>
       <div class="pub-link-row">
         <input type="text" id="pubLink" readonly>
         <button class="btn-cp-g" id="cpPubBtn">复制链接</button>
@@ -249,7 +249,7 @@
       <input type="file" id="fileIn" accept=".html,.htm,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.pdf,.jpg,.jpeg,.png,.gif,.webp,.svg,.bmp,.txt,.csv,.md,.json">
       <div class="dz-icon">&#128193;</div>
       <div class="dz-title">拖放文件，或点击选择</div>
-      <div class="dz-hint">支持 HTML &middot; Office &middot; PDF &middot; 图片 &middot; 文本（最大 25MB）</div>
+      <div class="dz-hint">支持 HTML &middot; Office &middot; PDF &middot; 图片 &middot; 文本（最大 50MB）</div>
     </div>
 
     <div class="sel-file" id="selFile">
@@ -319,9 +319,9 @@ function viewUrl(path) {
 }
 
 function publicUploadUrl() {
-  const { owner, repo, token } = cfg();
-  if (!owner || !repo || !token) return '';
-  return `https://${owner}.github.io/${repo}/upload.html#${token}`;
+  const { owner, repo } = cfg();
+  if (!owner || !repo) return '';
+  return `https://${owner}.github.io/${repo}/upload.html`;
 }
 
 // ---- Settings ----
@@ -375,9 +375,12 @@ function fmtSize(b) {
   return (b/1048576).toFixed(1) + ' MB';
 }
 
+const ADMIN_MAX = 50 * 1024 * 1024;
+
 function pick(file) {
   const e = ext(file.name);
   if (!ICONS[e]) { toast('不支持的文件类型', 'err'); return; }
+  if (file.size > ADMIN_MAX) { toast('文件超过 50MB 限制', 'err'); return; }
   pickedFile = file;
   document.getElementById('selIcon').innerHTML = ICONS[e];
   document.getElementById('selName').textContent = file.name;
