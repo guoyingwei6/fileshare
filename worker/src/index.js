@@ -25,6 +25,11 @@ export default {
       return handleList(request, env);
     }
 
+    // GET /folder/:key  — list files in a folder
+    if (request.method === 'GET' && url.pathname.startsWith('/folder/')) {
+      return handleFolderList(request, env, url);
+    }
+
     // GET /files/:key  — serve a file
     if (request.method === 'GET' && url.pathname.startsWith('/files/')) {
       return handleGet(request, env, url);
@@ -56,19 +61,49 @@ async function handleUpload(request, env, url) {
     return json(413, { error: `文件过大（最大 ${Math.round(maxSize / 1024 / 1024)}MB）` });
   }
 
-  const ts = Date.now();
-  const safe = file.name.replace(/[^\w.\u4e00-\u9fa5-]/g, '_');
-  const key = `${ts}_${safe}`;
+  // Folder upload: folderKey + filePath provided
+  const folderKey = formData.get('folderKey') || '';
+  const filePath  = formData.get('filePath')  || '';
+
+  let key;
+  if (folderKey && filePath) {
+    // Store as folders/{folderKey}/{filePath}
+    const safePath = filePath.replace(/[^\w.\u4e00-\u9fa5\/\-]/g, '_');
+    key = `folders/${folderKey}/${safePath}`;
+  } else {
+    const ts = Date.now();
+    const safe = file.name.replace(/[^\w.\u4e00-\u9fa5-]/g, '_');
+    key = `${ts}_${safe}`;
+  }
 
   await env.BUCKET.put(key, await file.arrayBuffer(), {
     httpMetadata: {
       contentType: file.type || 'application/octet-stream',
-      contentDisposition: `inline; filename="${safe}"`,
+      contentDisposition: `inline; filename="${file.name.replace(/[^\w.\u4e00-\u9fa5-]/g, '_')}"`,
     },
     customMetadata: { originalName: file.name, uploadedAt: new Date().toISOString() },
   });
 
-  return json(200, { url: `${url.origin}/files/${key}`, key });
+  return json(200, { url: `${url.origin}/files/${encodeURIComponent(key)}`, key });
+}
+
+// ---- folder list ----
+async function handleFolderList(request, env, url) {
+  const folderKey = decodeURIComponent(url.pathname.slice(8)); // /folder/
+  if (!folderKey) return json(404, { error: 'Not found' });
+
+  const prefix = `folders/${folderKey}/`;
+  const listed = await env.BUCKET.list({ prefix, limit: 1000 });
+
+  const files = listed.objects.map(o => ({
+    path: o.key.slice(prefix.length),   // relative path within folder
+    key: o.key,
+    size: o.size,
+    url: `${new URL(request.url).origin}/files/${encodeURIComponent(o.key)}`,
+    uploaded: o.uploaded,
+  }));
+
+  return json(200, { folderKey, files });
 }
 
 // ---- list (admin) ----

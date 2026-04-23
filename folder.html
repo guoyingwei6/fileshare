@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FileShare - 文件夹</title>
+  <style>
+    :root {
+      --primary: #4F46E5; --primary-h: #4338CA;
+      --bg: #F3F4F6; --card: #FFFFFF; --border: #E5E7EB;
+      --text: #111827; --muted: #6B7280;
+      --green: #10B981; --r: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; padding: 32px 16px 60px;
+    }
+    .wrap { max-width: 720px; margin: 0 auto; }
+
+    header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; }
+    .logo { font-size: 20px; font-weight: 800; text-decoration: none; color: var(--text); }
+    .logo span { color: var(--primary); }
+    .folder-name { font-size: 18px; font-weight: 700; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .hdr-sep { color: var(--muted); }
+
+    .card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r); overflow: hidden; margin-bottom: 14px; }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+    .bc-item { color: var(--primary); cursor: pointer; font-weight: 500; }
+    .bc-item:hover { text-decoration: underline; }
+    .bc-cur { color: var(--text); font-weight: 600; }
+    .bc-sep { color: var(--muted); }
+
+    /* File tree */
+    .tree-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      cursor: pointer; transition: background .12s;
+    }
+    .tree-item:last-child { border-bottom: none; }
+    .tree-item:hover { background: #F9FAFB; }
+    .tree-item.folder:hover { background: #EEF2FF; }
+    .ti-icon { font-size: 20px; flex-shrink: 0; line-height: 1; }
+    .ti-info { flex: 1; min-width: 0; }
+    .ti-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ti-name.folder { color: var(--primary); font-weight: 600; }
+    .ti-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .ti-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-sm {
+      padding: 5px 10px; border: 1.5px solid var(--border); border-radius: 6px;
+      background: var(--card); font-size: 11px; font-weight: 600; cursor: pointer;
+      color: var(--text); transition: all .12s; text-decoration: none; white-space: nowrap;
+    }
+    .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
+
+    .empty { padding: 40px; text-align: center; color: var(--muted); font-size: 14px; }
+    .loading { padding: 40px; text-align: center; color: var(--muted); font-size: 14px; }
+
+    /* Stats bar */
+    .stats { padding: 10px 16px; font-size: 12px; color: var(--muted); border-bottom: 1px solid var(--border); display: flex; gap: 16px; }
+    .stats strong { color: var(--text); }
+
+    footer { text-align: center; margin-top: 20px; font-size: 12px; color: var(--muted); }
+
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      padding: 10px 22px; border-radius: 8px; font-size: 14px; font-weight: 500;
+      background: var(--text); color: #fff; transition: transform .25s; z-index: 999; pointer-events: none;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.ok { background: var(--green); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="logo" href="/">File<span>Share</span></a>
+    <span class="hdr-sep">/</span>
+    <span class="folder-name" id="folderName">加载中...</span>
+  </header>
+
+  <div class="card" id="card">
+    <div class="loading">&#128194; 加载文件列表...</div>
+  </div>
+
+  <footer>Powered by Cloudflare R2</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const WORKER = 'https://fileshare-r2.guoyingwei6.workers.dev';
+
+const ICONS = {
+  html:'&#127758;', htm:'&#127758;',
+  doc:'&#128196;', docx:'&#128196;',
+  xls:'&#128202;', xlsx:'&#128202;',
+  ppt:'&#127909;', pptx:'&#127909;',
+  pdf:'&#128211;',
+  jpg:'&#128247;', jpeg:'&#128247;', png:'&#128247;',
+  gif:'&#128247;', webp:'&#128247;', svg:'&#128247;', bmp:'&#128247;',
+  txt:'&#128203;', csv:'&#128203;', md:'&#128203;', json:'&#128203;',
+  zip:'&#128230;', gz:'&#128230;', rar:'&#128230;',
+  mp4:'&#127916;', mov:'&#127916;', mp3:'&#127925;',
+};
+
+function ext(name) { return name.split('.').pop().toLowerCase(); }
+function fileIcon(name) { return ICONS[ext(name)] || '&#128196;'; }
+function fmtSize(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+function viewUrl(fileUrl) {
+  return location.origin + '/view.html?url=' + encodeURIComponent(fileUrl);
+}
+
+// Build a nested tree from flat file list
+function buildTree(files) {
+  const root = { dirs: {}, files: [] };
+  for (const f of files) {
+    const parts = f.path.split('/');
+    let node = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const d = parts[i];
+      if (!node.dirs[d]) node.dirs[d] = { dirs: {}, files: [] };
+      node = node.dirs[d];
+    }
+    node.files.push({ ...f, name: parts[parts.length - 1] });
+  }
+  return root;
+}
+
+// Navigation state
+let tree = null;
+let currentPath = []; // array of dir names
+let folderKey = '';
+let allFiles = [];
+
+function getNode(path) {
+  let node = tree;
+  for (const p of path) node = node.dirs[p];
+  return node;
+}
+
+function render() {
+  const node = getNode(currentPath);
+  const card = document.getElementById('card');
+
+  // Breadcrumb
+  let bc = `<div class="breadcrumb">
+    <span class="bc-item" onclick="navigate([])">&#128194; 根目录</span>`;
+  for (let i = 0; i < currentPath.length; i++) {
+    const path = currentPath.slice(0, i + 1);
+    if (i < currentPath.length - 1) {
+      bc += `<span class="bc-sep">/</span><span class="bc-item" onclick="navigate(${JSON.stringify(path)})">${currentPath[i]}</span>`;
+    } else {
+      bc += `<span class="bc-sep">/</span><span class="bc-cur">${currentPath[i]}</span>`;
+    }
+  }
+  bc += '</div>';
+
+  // Stats
+  const totalFiles = allFiles.length;
+  const totalSize = allFiles.reduce((s, f) => s + f.size, 0);
+  const stats = `<div class="stats">
+    <span>共 <strong>${totalFiles}</strong> 个文件</span>
+    <span>总大小 <strong>${fmtSize(totalSize)}</strong></span>
+  </div>`;
+
+  // Items
+  const dirs = Object.keys(node.dirs).sort();
+  const files = [...node.files].sort((a, b) => a.name.localeCompare(b.name));
+
+  let items = '';
+  if (dirs.length === 0 && files.length === 0) {
+    items = '<div class="empty">此目录为空</div>';
+  }
+
+  for (const d of dirs) {
+    const subFiles = countFiles(node.dirs[d]);
+    items += `<div class="tree-item folder" onclick="navigate(${JSON.stringify([...currentPath, d])})">
+      <span class="ti-icon">&#128193;</span>
+      <div class="ti-info">
+        <div class="ti-name folder">${d}</div>
+        <div class="ti-meta">${subFiles} 个文件</div>
+      </div>
+    </div>`;
+  }
+
+  for (const f of files) {
+    const vUrl = viewUrl(f.url);
+    items += `<div class="tree-item">
+      <span class="ti-icon">${fileIcon(f.name)}</span>
+      <div class="ti-info">
+        <div class="ti-name">${f.name}</div>
+        <div class="ti-meta">${fmtSize(f.size)}</div>
+      </div>
+      <div class="ti-actions">
+        <button class="btn-sm" onclick="event.stopPropagation();copyLink('${vUrl}')">复制链接</button>
+        <a class="btn-sm" href="${f.url}?dl=1" download="${f.name}" onclick="event.stopPropagation()">下载</a>
+        <a class="btn-sm" href="${vUrl}" target="_blank" onclick="event.stopPropagation()">预览</a>
+      </div>
+    </div>`;
+  }
+
+  card.innerHTML = bc + (currentPath.length === 0 ? stats : '') + items;
+}
+
+function countFiles(node) {
+  let n = node.files.length;
+  for (const d of Object.values(node.dirs)) n += countFiles(d);
+  return n;
+}
+
+function navigate(path) {
+  currentPath = path;
+  render();
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => toast('链接已复制', 'ok'));
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = `toast ${type} show`;
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// Load
+const params = new URLSearchParams(location.search);
+folderKey = params.get('key') || '';
+if (!folderKey) {
+  document.getElementById('card').innerHTML = '<div class="empty">无效的文件夹链接</div>';
+} else {
+  const displayName = folderKey.replace(/^\d+_/, '');
+  document.getElementById('folderName').textContent = displayName;
+  document.title = `FileShare - ${displayName}`;
+
+  fetch(`${WORKER}/folder/${encodeURIComponent(folderKey)}`)
+    .then(r => r.json())
+    .then(data => {
+      allFiles = data.files || [];
+      tree = buildTree(allFiles);
+      render();
+    })
+    .catch(() => {
+      document.getElementById('card').innerHTML = '<div class="empty">加载失败，请检查链接是否有效</div>';
+    });
+}
+</script>
+</body>
+</html>

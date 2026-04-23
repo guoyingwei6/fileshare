@@ -252,15 +252,32 @@ function fmtSize(b) {
 function viewUrl(u) { return location.origin + '/view.html?url=' + encodeURIComponent(u); }
 
 // ── Queue ──
+// item: { file, path, id, status, folderKey?, filePath?, url?, error? }
 let queue = [], uploading = false, idSeq = 0;
+// folderGroups: { [folderKey]: { name, ids: Set } }
+const folderGroups = {};
 
-function addFiles(files, pathPrefix = '') {
+function addFiles(files) {
   for (const f of files) {
     if (f.size > MAX_SIZE) { toast(`"${f.name}" 超过 200MB，已跳过`, 'err'); continue; }
     const id = ++idSeq;
-    const path = pathPrefix + f.name;
-    queue.push({ file: f, path, id, status: 'pending' });
+    queue.push({ file: f, path: f.name, id, status: 'pending' });
     renderItem(queue[queue.length - 1]);
+  }
+  updateToolbar();
+}
+
+function addFolderFiles(files, folderKey, folderName) {
+  if (!folderGroups[folderKey]) {
+    folderGroups[folderKey] = { name: folderName, ids: new Set() };
+    renderFolderHeader(folderKey, folderName, files.length);
+  }
+  for (const { file, filePath } of files) {
+    if (file.size > MAX_SIZE) { toast(`"${file.name}" 超过 200MB，已跳过`, 'err'); continue; }
+    const id = ++idSeq;
+    folderGroups[folderKey].ids.add(id);
+    queue.push({ file, path: filePath, id, status: 'pending', folderKey, filePath });
+    renderItem(queue[queue.length - 1], true);
   }
   updateToolbar();
 }
@@ -269,7 +286,7 @@ async function readDirEntry(entry, prefix = '') {
   const results = [];
   if (entry.isFile) {
     const file = await new Promise(res => entry.file(res));
-    results.push({ file, path: prefix + file.name });
+    results.push({ file, filePath: prefix + file.name });
   } else if (entry.isDirectory) {
     const reader = entry.createReader();
     let batch, entries = [];
@@ -283,31 +300,65 @@ async function addFromDataTransfer(dt) {
   const items = [...dt.items].filter(i => i.kind === 'file');
   const entries = items.map(i => i.webkitGetAsEntry?.()).filter(Boolean);
   if (!entries.length) { addFiles([...dt.files]); return; }
-  const allFiles = (await Promise.all(entries.map(e => readDirEntry(e)))).flat();
-  for (const { file, path } of allFiles) {
-    if (file.size > MAX_SIZE) { toast(`"${file.name}" 超过 200MB，已跳过`, 'err'); continue; }
-    const id = ++idSeq;
-    queue.push({ file, path, id, status: 'pending' });
-    renderItem(queue[queue.length - 1]);
+
+  for (const entry of entries) {
+    if (entry.isDirectory) {
+      const folderKey = `${Date.now()}_${entry.name}`;
+      const files = await readDirEntry(entry);
+      addFolderFiles(files, folderKey, entry.name);
+    } else {
+      const file = await new Promise(res => entry.file(res));
+      addFiles([file]);
+    }
   }
-  updateToolbar();
 }
 
 // ── Render ──
-function renderItem(item) {
+function renderFolderHeader(folderKey, folderName, count) {
+  const el = document.createElement('div');
+  el.id = 'fh-' + folderKey;
+  el.style.cssText = 'padding:10px 12px;background:#EEF2FF;border:1.5px solid #C7D2FE;border-radius:8px;margin-bottom:4px;';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-size:20px">&#128193;</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:700;color:#4338CA;">${folderName}</div>
+        <div style="font-size:11px;color:#6B7280;">${count} 个文件</div>
+      </div>
+      <div id="fha-${folderKey}"></div>
+    </div>`;
+  document.getElementById('fileList').appendChild(el);
+}
+
+function updateFolderStatus(folderKey) {
+  const group = folderGroups[folderKey];
+  if (!group) return;
+  const items = queue.filter(i => i.folderKey === folderKey);
+  const done = items.filter(i => i.status === 'done').length;
+  const total = items.length;
+  if (done < total) return; // not all done yet
+  const folderUrl = location.origin + '/folder.html?key=' + encodeURIComponent(folderKey);
+  const ac = document.getElementById('fha-' + folderKey);
+  if (ac) ac.innerHTML = `<button style="padding:4px 10px;background:#4F46E5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;" onclick="copyLink('${folderUrl}')">复制文件夹链接</button>
+    <a href="${folderUrl}" target="_blank" style="margin-left:6px;font-size:11px;color:#4338CA;text-decoration:underline;">查看</a>`;
+}
+
+function renderItem(item, inFolder = false) {
   const el = document.createElement('div');
   el.className = 'file-item'; el.id = 'fi-' + item.id;
-  const dir = item.path.includes('/') ? item.path.slice(0, item.path.lastIndexOf('/') + 1) : '';
+  if (inFolder) el.style.marginLeft = '16px';
+  const dir = !inFolder && item.path.includes('/') ? item.path.slice(0, item.path.lastIndexOf('/') + 1) : '';
+  const displayPath = inFolder ? item.filePath : '';
   el.innerHTML = `
     <span class="fi-icon">${icon(item.file.name)}</span>
     <div class="fi-info">
-      ${dir ? `<div class="fi-path">&#128193; ${dir}</div>` : ''}
+      ${displayPath && displayPath.includes('/') ? `<div class="fi-path">${displayPath.slice(0, displayPath.lastIndexOf('/') + 1)}</div>` : ''}
       <div class="fi-name">${item.file.name}</div>
       <div class="fi-meta"><span class="fi-size">${fmtSize(item.file.size)}</span><span class="fi-status" id="fis-${item.id}"></span></div>
       <div id="fil-${item.id}"></div>
     </div>
     <div class="fi-actions" id="fia-${item.id}">
-      <button class="fi-rm" onclick="removeItem(${item.id})">&#10005;</button>
+      ${item.folderKey ? '' : `<button class="fi-rm" onclick="removeItem(${item.id})">&#10005;</button>`}
     </div>`;
   document.getElementById('fileList').appendChild(el);
 }
@@ -320,15 +371,20 @@ function updateItemStatus(item) {
   const ac = document.getElementById('fia-' + item.id);
   if (item.status === 'uploading') {
     st.className = 'fi-status uploading'; st.textContent = '上传中...';
-    lk.innerHTML = ''; ac.innerHTML = '';
+    lk.innerHTML = ''; if (ac) ac.innerHTML = '';
   } else if (item.status === 'done') {
-    const vUrl = viewUrl(item.url);
     st.className = 'fi-status done'; st.textContent = '✓ 完成';
-    lk.innerHTML = `<a class="fi-link" href="${vUrl}" target="_blank">${vUrl}</a>`;
-    ac.innerHTML = `<button class="fi-cp" onclick="copyLink('${vUrl}')">复制</button>`;
+    if (!item.folderKey) {
+      const vUrl = viewUrl(item.url);
+      lk.innerHTML = `<a class="fi-link" href="${vUrl}" target="_blank">${vUrl}</a>`;
+      if (ac) ac.innerHTML = `<button class="fi-cp" onclick="copyLink('${vUrl}')">复制</button>`;
+    } else {
+      lk.innerHTML = '';
+      updateFolderStatus(item.folderKey);
+    }
   } else if (item.status === 'error') {
     st.className = 'fi-status error'; st.textContent = '✕ ' + (item.error || '失败');
-    ac.innerHTML = `<button class="fi-rm" onclick="removeItem(${item.id})">&#10005;</button>`;
+    if (ac) ac.innerHTML = `<button class="fi-rm" onclick="removeItem(${item.id})">&#10005;</button>`;
   }
 }
 
@@ -369,15 +425,29 @@ async function uploadAll() {
       const fd = new FormData();
       fd.append('file', item.file);
       fd.append('adminKey', ADMIN_KEY);
+      if (item.folderKey) {
+        fd.append('folderKey', item.folderKey);
+        fd.append('filePath', item.filePath);
+      }
       const resp = await fetch(WORKER + '/upload', { method: 'POST', body: fd });
       if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`); }
       const { url } = await resp.json();
       item.status = 'done'; item.url = url;
-      const vUrl = viewUrl(url);
-      saveHist({ name: item.file.name, url: vUrl, size: item.file.size, date: new Date().toISOString() });
+      if (!item.folderKey) {
+        const vUrl = viewUrl(url);
+        saveHist({ name: item.file.name, url: vUrl, size: item.file.size, date: new Date().toISOString() });
+      }
     } catch (e) { item.status = 'error'; item.error = e.message; }
     updateItemStatus(item);
     fill.style.width = (++done / pending.length * 100) + '%';
+  }
+  // Save folder links to history
+  for (const [fk, group] of Object.entries(folderGroups)) {
+    const items = queue.filter(i => i.folderKey === fk && i.status === 'done');
+    if (items.length > 0) {
+      const folderUrl = location.origin + '/folder.html?key=' + encodeURIComponent(fk);
+      saveHist({ name: '&#128193; ' + group.name, url: folderUrl, size: items.reduce((s,i)=>s+i.file.size,0), date: new Date().toISOString(), isFolder: true });
+    }
   }
   renderHist();
   const ok = pending.filter(i => i.status === 'done').length;
@@ -396,13 +466,13 @@ document.getElementById('addFilesBtn').onclick = () => document.getElementById('
 document.getElementById('addFolderBtn').onclick = () => document.getElementById('folderIn').click();
 document.getElementById('fileIn').onchange = e => { addFiles([...e.target.files]); e.target.value = ''; };
 document.getElementById('folderIn').onchange = e => {
-  for (const f of e.target.files) {
-    if (f.size > MAX_SIZE) { toast(`"${f.name}" 超过 200MB，已跳过`, 'err'); continue; }
-    const id = ++idSeq;
-    queue.push({ file: f, path: f.webkitRelativePath || f.name, id, status: 'pending' });
-    renderItem(queue[queue.length - 1]);
-  }
-  updateToolbar(); e.target.value = '';
+  const files = [...e.target.files];
+  if (!files.length) return;
+  const rootName = files[0].webkitRelativePath.split('/')[0];
+  const folderKey = `${Date.now()}_${rootName}`;
+  const mapped = files.map(f => ({ file: f, filePath: f.webkitRelativePath.slice(rootName.length + 1) }));
+  addFolderFiles(mapped, folderKey, rootName);
+  e.target.value = '';
 };
 document.getElementById('clearBtn').onclick = () => { queue = []; document.getElementById('fileList').innerHTML = ''; updateToolbar(); };
 document.getElementById('upBtn').onclick = uploadAll;

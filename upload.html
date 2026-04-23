@@ -216,83 +216,98 @@ function viewUrl(fileUrl) {
 }
 
 // ---- File queue ----
-// Each entry: { file, path, id, status: 'pending'|'uploading'|'done'|'error', url, error }
-let queue = [];
-let uploading = false;
-let idSeq = 0;
+let queue = [], uploading = false, idSeq = 0;
+const folderGroups = {};
 
-function addFiles(files, basePath = '') {
+function addFiles(files) {
   for (const f of files) {
     if (f.size > MAX_SIZE) { toast(`"${f.name}" 超过 50MB 限制，已跳过`, 'err'); continue; }
     const id = ++idSeq;
-    const path = basePath + f.name;
-    queue.push({ file: f, path, id, status: 'pending' });
+    queue.push({ file: f, path: f.name, id, status: 'pending' });
     renderItem(queue[queue.length - 1]);
   }
   updateToolbar();
 }
 
-// Recursively read a FileSystemDirectoryEntry
-async function readDirEntry(entry, pathPrefix = '') {
+function addFolderFiles(files, folderKey, folderName) {
+  if (!folderGroups[folderKey]) {
+    folderGroups[folderKey] = { name: folderName, ids: new Set() };
+    renderFolderHeader(folderKey, folderName, files.length);
+  }
+  for (const { file, filePath } of files) {
+    if (file.size > MAX_SIZE) { toast(`"${file.name}" 超过 50MB，已跳过`, 'err'); continue; }
+    const id = ++idSeq;
+    folderGroups[folderKey].ids.add(id);
+    queue.push({ file, path: filePath, id, status: 'pending', folderKey, filePath });
+    renderItem(queue[queue.length - 1], true);
+  }
+  updateToolbar();
+}
+
+async function readDirEntry(entry, prefix = '') {
   const results = [];
   if (entry.isFile) {
     const file = await new Promise(res => entry.file(res));
-    results.push({ file, path: pathPrefix + file.name });
+    results.push({ file, filePath: prefix + file.name });
   } else if (entry.isDirectory) {
     const reader = entry.createReader();
-    // readEntries may return partial results; loop until empty
-    let batch;
-    const entries = [];
-    do {
-      batch = await new Promise((res, rej) => reader.readEntries(res, rej));
-      entries.push(...batch);
-    } while (batch.length > 0);
-    for (const child of entries) {
-      const sub = await readDirEntry(child, pathPrefix + entry.name + '/');
-      results.push(...sub);
-    }
+    let batch, entries = [];
+    do { batch = await new Promise((res, rej) => reader.readEntries(res, rej)); entries.push(...batch); } while (batch.length > 0);
+    for (const child of entries) results.push(...await readDirEntry(child, prefix + entry.name + '/'));
   }
   return results;
 }
 
 async function addFromDataTransfer(dt) {
   const items = [...dt.items].filter(i => i.kind === 'file');
-  if (!items.length) return;
-
-  const entries = items.map(i => i.webkitGetAsEntry ? i.webkitGetAsEntry() : null).filter(Boolean);
-  if (!entries.length) {
-    // fallback: no getAsEntry support
-    addFiles([...dt.files]);
-    return;
-  }
-
-  const allFiles = [];
+  const entries = items.map(i => i.webkitGetAsEntry?.()).filter(Boolean);
+  if (!entries.length) { addFiles([...dt.files]); return; }
   for (const entry of entries) {
-    const results = await readDirEntry(entry);
-    allFiles.push(...results);
+    if (entry.isDirectory) {
+      const folderKey = `${Date.now()}_${entry.name}`;
+      const files = await readDirEntry(entry);
+      addFolderFiles(files, folderKey, entry.name);
+    } else {
+      const file = await new Promise(res => entry.file(res));
+      addFiles([file]);
+    }
   }
-
-  for (const { file, path } of allFiles) {
-    if (file.size > MAX_SIZE) { toast(`"${file.name}" 超过 50MB 限制，已跳过`, 'err'); continue; }
-    const id = ++idSeq;
-    queue.push({ file, path, id, status: 'pending' });
-    renderItem(queue[queue.length - 1]);
-  }
-  updateToolbar();
 }
 
 // ---- Render ----
-function renderItem(item) {
-  const list = document.getElementById('fileList');
+function renderFolderHeader(folderKey, folderName, count) {
   const el = document.createElement('div');
-  el.className = 'file-item';
-  el.id = 'fi-' + item.id;
-  const hasPath = item.path.includes('/');
-  const dirPart = hasPath ? item.path.slice(0, item.path.lastIndexOf('/') + 1) : '';
+  el.id = 'fh-' + folderKey;
+  el.style.cssText = 'padding:10px 14px;background:#EEF2FF;border:1.5px solid #C7D2FE;border-radius:10px;margin-bottom:4px;';
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span style="font-size:22px">&#128193;</span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:#4338CA;">${folderName}</div>
+        <div style="font-size:12px;color:#6B7280;">${count} 个文件</div>
+      </div>
+      <div id="fha-${folderKey}"></div>
+    </div>`;
+  document.getElementById('fileList').appendChild(el);
+}
+
+function updateFolderStatus(folderKey) {
+  const items = queue.filter(i => i.folderKey === folderKey);
+  if (items.some(i => i.status !== 'done' && i.status !== 'error')) return;
+  const folderUrl = location.origin + '/folder.html?key=' + encodeURIComponent(folderKey);
+  const ac = document.getElementById('fha-' + folderKey);
+  if (ac) ac.innerHTML = `<button style="padding:5px 12px;background:#4F46E5;color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;" onclick="copyLink('${folderUrl}')">复制文件夹链接</button>`;
+}
+
+function renderItem(item, inFolder = false) {
+  const el = document.createElement('div');
+  el.className = 'file-item'; el.id = 'fi-' + item.id;
+  if (inFolder) el.style.marginLeft = '16px';
+  const dir = inFolder && item.filePath.includes('/') ? item.filePath.slice(0, item.filePath.lastIndexOf('/') + 1) : '';
   el.innerHTML = `
     <span class="fi-icon">${icon(item.file.name)}</span>
     <div class="fi-info">
-      ${dirPart ? `<div class="fi-path">&#128193; ${dirPart}</div>` : ''}
+      ${dir ? `<div class="fi-path">&#128193; ${dir}</div>` : ''}
       <div class="fi-name">${item.file.name}</div>
       <div class="fi-meta">
         <span class="fi-size">${fmtSize(item.file.size)}</span>
@@ -301,38 +316,38 @@ function renderItem(item) {
       <div id="fil-${item.id}"></div>
     </div>
     <div class="fi-actions" id="fia-${item.id}">
-      <button class="fi-rm" title="移除" onclick="removeItem(${item.id})">&#10005;</button>
+      ${item.folderKey ? '' : `<button class="fi-rm" title="移除" onclick="removeItem(${item.id})">&#10005;</button>`}
     </div>`;
-  list.appendChild(el);
+  document.getElementById('fileList').appendChild(el);
 }
 
 function updateItemStatus(item) {
-  const el = document.getElementById('fi-' + item.id);
-  if (!el) return;
+  const el = document.getElementById('fi-' + item.id); if (!el) return;
   el.className = 'file-item ' + (item.status === 'pending' ? '' : item.status);
   const st = document.getElementById('fis-' + item.id);
   const lk = document.getElementById('fil-' + item.id);
   const ac = document.getElementById('fia-' + item.id);
   if (item.status === 'uploading') {
     st.className = 'fi-status uploading'; st.textContent = '上传中...';
-    lk.innerHTML = '';
-    ac.innerHTML = '';
+    lk.innerHTML = ''; if (ac) ac.innerHTML = '';
   } else if (item.status === 'done') {
     st.className = 'fi-status done'; st.textContent = '&#10003; 完成';
-    const vUrl = viewUrl(item.url);
-    lk.innerHTML = `<a class="fi-link" href="${vUrl}" target="_blank">${vUrl}</a>`;
-    ac.innerHTML = `<button class="fi-cp" onclick="copyLink('${vUrl}')">复制</button>`;
+    if (!item.folderKey) {
+      const vUrl = viewUrl(item.url);
+      lk.innerHTML = `<a class="fi-link" href="${vUrl}" target="_blank">${vUrl}</a>`;
+      if (ac) ac.innerHTML = `<button class="fi-cp" onclick="copyLink('${vUrl}')">复制</button>`;
+    } else {
+      lk.innerHTML = ''; updateFolderStatus(item.folderKey);
+    }
   } else if (item.status === 'error') {
     st.className = 'fi-status error'; st.textContent = '&#10005; ' + (item.error || '失败');
-    lk.innerHTML = '';
-    ac.innerHTML = `<button class="fi-rm" title="移除" onclick="removeItem(${item.id})">&#10005;</button>`;
+    lk.innerHTML = ''; if (ac) ac.innerHTML = `<button class="fi-rm" onclick="removeItem(${item.id})">&#10005;</button>`;
   }
 }
 
 function removeItem(id) {
   queue = queue.filter(i => i.id !== id);
-  const el = document.getElementById('fi-' + id);
-  if (el) el.remove();
+  document.getElementById('fi-' + id)?.remove();
   updateToolbar();
 }
 
@@ -377,6 +392,10 @@ async function uploadAll() {
     try {
       const fd = new FormData();
       fd.append('file', item.file);
+      if (item.folderKey) {
+        fd.append('folderKey', item.folderKey);
+        fd.append('filePath', item.filePath);
+      }
       const resp = await fetch(WORKER + '/upload', { method: 'POST', body: fd });
       if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`); }
       const { url } = await resp.json();
@@ -418,14 +437,11 @@ document.getElementById('addFolderBtn').onclick = () => document.getElementById(
 document.getElementById('fileIn').onchange = e => { addFiles([...e.target.files]); e.target.value = ''; };
 document.getElementById('folderIn').onchange = e => {
   const files = [...e.target.files];
-  // webkitRelativePath gives us the folder structure
-  for (const f of files) {
-    if (f.size > MAX_SIZE) { toast(`"${f.name}" 超过 50MB，已跳过`, 'err'); continue; }
-    const id = ++idSeq;
-    queue.push({ file: f, path: f.webkitRelativePath || f.name, id, status: 'pending' });
-    renderItem(queue[queue.length - 1]);
-  }
-  updateToolbar();
+  if (!files.length) { e.target.value = ''; return; }
+  const rootName = files[0].webkitRelativePath.split('/')[0];
+  const folderKey = `${Date.now()}_${rootName}`;
+  const mapped = files.map(f => ({ file: f, filePath: f.webkitRelativePath.slice(rootName.length + 1) }));
+  addFolderFiles(mapped, folderKey, rootName);
   e.target.value = '';
 };
 
