@@ -16,42 +16,107 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: var(--bg); color: var(--text);
       min-height: 100vh; display: flex; flex-direction: column;
-      align-items: center; justify-content: flex-start;
-      padding: 40px 16px 60px;
+      align-items: center; padding: 40px 16px 60px;
     }
-    .wrap { width: 100%; max-width: 520px; }
+    .wrap { width: 100%; max-width: 600px; }
 
     header { text-align: center; margin-bottom: 32px; }
     .logo { font-size: 26px; font-weight: 800; letter-spacing: -.5px; margin-bottom: 6px; }
     .logo span { color: var(--primary); }
     .tagline { font-size: 14px; color: var(--muted); }
 
-    .card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r); padding: 28px; margin-bottom: 14px; }
+    .card { background: var(--card); border: 1.5px solid var(--border); border-radius: var(--r); padding: 24px; margin-bottom: 14px; }
 
+    /* Dropzone */
     .dropzone {
       position: relative; border: 2px dashed var(--border);
-      border-radius: var(--r); padding: 52px 20px;
+      border-radius: var(--r); padding: 44px 20px;
       text-align: center; cursor: pointer;
       transition: border-color .2s, background .2s; user-select: none;
     }
     .dropzone:hover, .dropzone.over { border-color: var(--primary); background: #EEF2FF; }
-    .dropzone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-    .dz-icon { font-size: 52px; margin-bottom: 12px; line-height: 1; }
-    .dz-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
-    .dz-hint { font-size: 13px; color: var(--muted); }
-
-    .sel-file {
-      display: none; align-items: center; gap: 14px;
-      padding: 14px 16px; background: #EEF2FF;
-      border-radius: 10px; margin-top: 14px;
+    .dropzone.over { border-style: solid; }
+    .dz-icon { font-size: 48px; margin-bottom: 10px; line-height: 1; }
+    .dz-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .dz-hint { font-size: 13px; color: var(--muted); line-height: 1.6; }
+    .dz-actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+    .dz-btn {
+      padding: 8px 18px; border-radius: 8px; font-size: 13px; font-weight: 600;
+      cursor: pointer; transition: background .15s, border-color .15s;
     }
-    .sel-file.show { display: flex; }
-    .sel-icon { font-size: 28px; flex-shrink: 0; }
-    .sel-info { flex: 1; min-width: 0; }
-    .sel-name { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sel-size { font-size: 12px; color: var(--muted); margin-top: 2px; }
-    .btn-rm { background: none; border: none; cursor: pointer; color: var(--muted); font-size: 18px; padding: 4px; flex-shrink: 0; }
+    .dz-btn-primary { background: var(--primary); color: #fff; border: none; }
+    .dz-btn-primary:hover { background: var(--primary-h); }
+    .dz-btn-secondary { background: #fff; color: var(--text); border: 1.5px solid var(--border); }
+    .dz-btn-secondary:hover { border-color: var(--primary); color: var(--primary); }
+    #fileIn, #folderIn { display: none; }
 
+    /* Toolbar */
+    .toolbar {
+      display: none; align-items: center; gap: 10px;
+      margin-top: 16px; flex-wrap: wrap;
+    }
+    .toolbar.show { display: flex; }
+    .toolbar-info { font-size: 13px; color: var(--muted); flex: 1; }
+    .toolbar-info strong { color: var(--text); }
+    .btn-sm {
+      padding: 6px 12px; border-radius: 7px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1.5px solid var(--border); background: #fff;
+      color: var(--text); transition: all .15s; white-space: nowrap;
+    }
+    .btn-sm:hover { border-color: var(--primary); color: var(--primary); }
+    .btn-sm.danger:hover { border-color: var(--red); color: var(--red); }
+
+    /* File list */
+    .file-list { margin-top: 14px; display: flex; flex-direction: column; gap: 8px; }
+    .file-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; background: #F9FAFB;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      transition: border-color .2s;
+    }
+    .file-item.uploading { border-color: var(--primary); background: #EEF2FF; }
+    .file-item.done { border-color: #6EE7B7; background: #F0FDF4; }
+    .file-item.error { border-color: #FCA5A5; background: #FEF2F2; }
+    .fi-icon { font-size: 24px; flex-shrink: 0; line-height: 1; }
+    .fi-info { flex: 1; min-width: 0; }
+    .fi-name {
+      font-size: 13px; font-weight: 600; white-space: nowrap;
+      overflow: hidden; text-overflow: ellipsis;
+    }
+    .fi-path { font-size: 11px; color: var(--muted); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .fi-meta { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+    .fi-size { font-size: 11px; color: var(--muted); }
+    .fi-status { font-size: 11px; font-weight: 600; }
+    .fi-status.uploading { color: var(--primary); }
+    .fi-status.done { color: #059669; }
+    .fi-status.error { color: var(--red); }
+    .fi-link {
+      font-size: 11px; color: var(--primary); text-decoration: none;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 100%;
+    }
+    .fi-link:hover { text-decoration: underline; }
+    .fi-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .fi-cp {
+      padding: 4px 10px; background: #059669; color: #fff;
+      border: none; border-radius: 6px; font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: background .15s; white-space: nowrap;
+    }
+    .fi-cp:hover { background: #047857; }
+    .fi-rm {
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 16px; padding: 2px 4px;
+      line-height: 1; transition: color .15s;
+    }
+    .fi-rm:hover { color: var(--red); }
+
+    /* Progress */
+    .prog { display: none; margin-top: 14px; }
+    .prog.show { display: block; }
+    .prog-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .prog-fill { height: 100%; background: var(--primary); width: 0%; transition: width .3s ease; border-radius: 3px; }
+    .prog-label { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; }
+
+    /* Upload button */
     .btn-upload {
       display: none; width: 100%; padding: 14px;
       background: var(--primary); color: #fff;
@@ -63,39 +128,6 @@
     .btn-upload:hover { background: var(--primary-h); }
     .btn-upload:active { transform: scale(.98); }
     .btn-upload:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-
-    .prog { display: none; margin-top: 14px; }
-    .prog.show { display: block; }
-    .prog-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .prog-fill { height: 100%; background: var(--primary); width: 0%; transition: width .4s ease; border-radius: 3px; }
-    .prog-label { font-size: 12px; color: var(--muted); margin-top: 6px; text-align: center; }
-
-    .result { display: none; margin-top: 14px; }
-    .result.show { display: block; }
-    .result-box { background: #ECFDF5; border: 1.5px solid #6EE7B7; border-radius: 10px; padding: 18px; }
-    .result-icon { font-size: 32px; text-align: center; margin-bottom: 10px; }
-    .result-title { font-size: 15px; font-weight: 700; color: #065F46; margin-bottom: 12px; text-align: center; }
-    .link-box { display: flex; gap: 8px; margin-bottom: 10px; }
-    .link-box input {
-      flex: 1; padding: 10px 12px; font-size: 12px;
-      border: 1.5px solid #6EE7B7; border-radius: 8px;
-      background: #fff; color: var(--text); outline: none; font-family: monospace;
-    }
-    .btn-cp {
-      padding: 10px 16px; background: #059669; color: #fff;
-      border: none; border-radius: 8px; cursor: pointer;
-      font-size: 13px; font-weight: 700; white-space: nowrap;
-      transition: background .15s;
-    }
-    .btn-cp:hover { background: #047857; }
-    .btn-view {
-      display: block; width: 100%; padding: 10px;
-      background: #fff; color: #059669;
-      border: 1.5px solid #6EE7B7; border-radius: 8px;
-      text-align: center; font-size: 13px; font-weight: 600;
-      cursor: pointer; text-decoration: none; transition: background .15s;
-    }
-    .btn-view:hover { background: #F0FDF4; }
 
     footer { text-align: center; margin-top: 24px; font-size: 12px; color: var(--muted); }
 
@@ -121,38 +153,31 @@
 
   <div class="card">
     <div class="dropzone" id="dz">
-      <input type="file" id="fileIn">
       <div class="dz-icon">&#128640;</div>
-      <div class="dz-title">拖放文件到此处</div>
-      <div class="dz-hint">或点击选择 &middot; 支持所有格式 &middot; 最大 50MB</div>
-    </div>
-
-    <div class="sel-file" id="selFile">
-      <span class="sel-icon" id="selIcon">&#128196;</span>
-      <div class="sel-info">
-        <div class="sel-name" id="selName"></div>
-        <div class="sel-size" id="selSize"></div>
+      <div class="dz-title">拖放文件或文件夹到此处</div>
+      <div class="dz-hint">支持多文件同时上传 &middot; 支持文件夹 &middot; 单文件最大 50MB</div>
+      <div class="dz-actions">
+        <button class="dz-btn dz-btn-primary" id="pickFilesBtn">&#128196; 选择文件</button>
+        <button class="dz-btn dz-btn-secondary" id="pickFolderBtn">&#128193; 选择文件夹</button>
       </div>
-      <button class="btn-rm" id="rmBtn">&#10005;</button>
+    </div>
+    <input type="file" id="fileIn" multiple>
+    <input type="file" id="folderIn" webkitdirectory>
+
+    <div class="toolbar" id="toolbar">
+      <span class="toolbar-info" id="toolbarInfo"></span>
+      <button class="btn-sm" id="addFilesBtn">+ 文件</button>
+      <button class="btn-sm" id="addFolderBtn">+ 文件夹</button>
+      <button class="btn-sm danger" id="clearBtn">清空</button>
     </div>
 
-    <button class="btn-upload" id="upBtn">&#128640; 立即上传</button>
+    <div class="file-list" id="fileList"></div>
+
+    <button class="btn-upload" id="upBtn">&#128640; 开始上传</button>
 
     <div class="prog" id="prog">
       <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
-      <div class="prog-label" id="progLabel">上传中...</div>
-    </div>
-
-    <div class="result" id="result">
-      <div class="result-box">
-        <div class="result-icon">&#127881;</div>
-        <div class="result-title">上传成功！链接已生成</div>
-        <div class="link-box">
-          <input type="text" id="resLink" readonly>
-          <button class="btn-cp" id="cpBtn">复制</button>
-        </div>
-        <a class="btn-view" id="viewBtn" href="#" target="_blank">&#128065; 预览文件</a>
-      </div>
+      <div class="prog-label" id="progLabel"></div>
     </div>
   </div>
 
@@ -173,83 +198,265 @@ const ICONS = {
   pdf:'&#128211;',
   jpg:'&#128247;', jpeg:'&#128247;', png:'&#128247;',
   gif:'&#128247;', webp:'&#128247;', svg:'&#128247;', bmp:'&#128247;',
-  txt:'&#128203;', csv:'&#128203;', md:'&#128203;', json:'&#128203;'
+  txt:'&#128203;', csv:'&#128203;', md:'&#128203;', json:'&#128203;',
+  zip:'&#128230;', gz:'&#128230;', rar:'&#128230;', '7z':'&#128230;',
+  mp4:'&#127916;', mov:'&#127916;', avi:'&#127916;',
+  mp3:'&#127925;', wav:'&#127925;', flac:'&#127925;',
 };
-
-let pickedFile = null;
 
 function ext(name) { return name.split('.').pop().toLowerCase(); }
 function icon(name) { return ICONS[ext(name)] || '&#128196;'; }
 function fmtSize(b) {
   if (b < 1024) return b + ' B';
-  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
-  return (b/1048576).toFixed(1) + ' MB';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
 }
 function viewUrl(fileUrl) {
   return location.origin + '/view.html?url=' + encodeURIComponent(fileUrl);
 }
 
-function pick(file) {
-  if (file.size > MAX_SIZE) { toast(`文件过大，最大 ${fmtSize(MAX_SIZE)}`, 'err'); return; }
-  pickedFile = file;
-  document.getElementById('selIcon').innerHTML = icon(file.name);
-  document.getElementById('selName').textContent = file.name;
-  document.getElementById('selSize').textContent = fmtSize(file.size);
-  document.getElementById('selFile').classList.add('show');
-  document.getElementById('upBtn').classList.add('show');
-  document.getElementById('result').classList.remove('show');
+// ---- File queue ----
+// Each entry: { file, path, id, status: 'pending'|'uploading'|'done'|'error', url, error }
+let queue = [];
+let uploading = false;
+let idSeq = 0;
+
+function addFiles(files, basePath = '') {
+  for (const f of files) {
+    if (f.size > MAX_SIZE) { toast(`"${f.name}" 超过 50MB 限制，已跳过`, 'err'); continue; }
+    const id = ++idSeq;
+    const path = basePath + f.name;
+    queue.push({ file: f, path, id, status: 'pending' });
+    renderItem(queue[queue.length - 1]);
+  }
+  updateToolbar();
 }
 
-document.getElementById('fileIn').addEventListener('change', e => { if (e.target.files[0]) pick(e.target.files[0]); });
+// Recursively read a FileSystemDirectoryEntry
+async function readDirEntry(entry, pathPrefix = '') {
+  const results = [];
+  if (entry.isFile) {
+    const file = await new Promise(res => entry.file(res));
+    results.push({ file, path: pathPrefix + file.name });
+  } else if (entry.isDirectory) {
+    const reader = entry.createReader();
+    // readEntries may return partial results; loop until empty
+    let batch;
+    const entries = [];
+    do {
+      batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+      entries.push(...batch);
+    } while (batch.length > 0);
+    for (const child of entries) {
+      const sub = await readDirEntry(child, pathPrefix + entry.name + '/');
+      results.push(...sub);
+    }
+  }
+  return results;
+}
+
+async function addFromDataTransfer(dt) {
+  const items = [...dt.items].filter(i => i.kind === 'file');
+  if (!items.length) return;
+
+  const entries = items.map(i => i.webkitGetAsEntry ? i.webkitGetAsEntry() : null).filter(Boolean);
+  if (!entries.length) {
+    // fallback: no getAsEntry support
+    addFiles([...dt.files]);
+    return;
+  }
+
+  const allFiles = [];
+  for (const entry of entries) {
+    const results = await readDirEntry(entry);
+    allFiles.push(...results);
+  }
+
+  for (const { file, path } of allFiles) {
+    if (file.size > MAX_SIZE) { toast(`"${file.name}" 超过 50MB 限制，已跳过`, 'err'); continue; }
+    const id = ++idSeq;
+    queue.push({ file, path, id, status: 'pending' });
+    renderItem(queue[queue.length - 1]);
+  }
+  updateToolbar();
+}
+
+// ---- Render ----
+function renderItem(item) {
+  const list = document.getElementById('fileList');
+  const el = document.createElement('div');
+  el.className = 'file-item';
+  el.id = 'fi-' + item.id;
+  const hasPath = item.path.includes('/');
+  const dirPart = hasPath ? item.path.slice(0, item.path.lastIndexOf('/') + 1) : '';
+  el.innerHTML = `
+    <span class="fi-icon">${icon(item.file.name)}</span>
+    <div class="fi-info">
+      ${dirPart ? `<div class="fi-path">&#128193; ${dirPart}</div>` : ''}
+      <div class="fi-name">${item.file.name}</div>
+      <div class="fi-meta">
+        <span class="fi-size">${fmtSize(item.file.size)}</span>
+        <span class="fi-status" id="fis-${item.id}"></span>
+      </div>
+      <div id="fil-${item.id}"></div>
+    </div>
+    <div class="fi-actions" id="fia-${item.id}">
+      <button class="fi-rm" title="移除" onclick="removeItem(${item.id})">&#10005;</button>
+    </div>`;
+  list.appendChild(el);
+}
+
+function updateItemStatus(item) {
+  const el = document.getElementById('fi-' + item.id);
+  if (!el) return;
+  el.className = 'file-item ' + (item.status === 'pending' ? '' : item.status);
+  const st = document.getElementById('fis-' + item.id);
+  const lk = document.getElementById('fil-' + item.id);
+  const ac = document.getElementById('fia-' + item.id);
+  if (item.status === 'uploading') {
+    st.className = 'fi-status uploading'; st.textContent = '上传中...';
+    lk.innerHTML = '';
+    ac.innerHTML = '';
+  } else if (item.status === 'done') {
+    st.className = 'fi-status done'; st.textContent = '&#10003; 完成';
+    const vUrl = viewUrl(item.url);
+    lk.innerHTML = `<a class="fi-link" href="${vUrl}" target="_blank">${vUrl}</a>`;
+    ac.innerHTML = `<button class="fi-cp" onclick="copyLink('${vUrl}')">复制</button>`;
+  } else if (item.status === 'error') {
+    st.className = 'fi-status error'; st.textContent = '&#10005; ' + (item.error || '失败');
+    lk.innerHTML = '';
+    ac.innerHTML = `<button class="fi-rm" title="移除" onclick="removeItem(${item.id})">&#10005;</button>`;
+  }
+}
+
+function removeItem(id) {
+  queue = queue.filter(i => i.id !== id);
+  const el = document.getElementById('fi-' + id);
+  if (el) el.remove();
+  updateToolbar();
+}
+
+function updateToolbar() {
+  const pending = queue.filter(i => i.status === 'pending');
+  const total = queue.length;
+  const toolbar = document.getElementById('toolbar');
+  const upBtn = document.getElementById('upBtn');
+  if (total === 0) {
+    toolbar.classList.remove('show');
+    upBtn.classList.remove('show');
+    return;
+  }
+  toolbar.classList.add('show');
+  const totalSize = queue.reduce((s, i) => s + i.file.size, 0);
+  document.getElementById('toolbarInfo').innerHTML =
+    `已选 <strong>${total}</strong> 个文件，共 <strong>${fmtSize(totalSize)}</strong>`;
+  upBtn.classList.toggle('show', pending.length > 0 && !uploading);
+  upBtn.textContent = `\u{1F680} 上传 ${pending.length} 个文件`;
+}
+
+// ---- Upload ----
+async function uploadAll() {
+  const pending = queue.filter(i => i.status === 'pending');
+  if (!pending.length) return;
+  uploading = true;
+  document.getElementById('upBtn').disabled = true;
+  document.getElementById('upBtn').classList.remove('show');
+
+  const prog = document.getElementById('prog');
+  const fill = document.getElementById('progFill');
+  const label = document.getElementById('progLabel');
+  prog.classList.add('show');
+  fill.style.width = '0%';
+
+  let done = 0;
+  for (const item of pending) {
+    label.textContent = `正在上传 ${done + 1} / ${pending.length}：${item.file.name}`;
+    item.status = 'uploading';
+    updateItemStatus(item);
+
+    try {
+      const fd = new FormData();
+      fd.append('file', item.file);
+      const resp = await fetch(WORKER + '/upload', { method: 'POST', body: fd });
+      if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`); }
+      const { url } = await resp.json();
+      item.status = 'done';
+      item.url = url;
+    } catch (e) {
+      item.status = 'error';
+      item.error = e.message;
+    }
+
+    updateItemStatus(item);
+    done++;
+    fill.style.width = (done / pending.length * 100) + '%';
+  }
+
+  label.textContent = `完成 ${done} / ${pending.length} 个文件`;
+  const successCount = pending.filter(i => i.status === 'done').length;
+  if (successCount === pending.length) {
+    toast(`全部上传成功！共 ${successCount} 个文件`, 'ok');
+  } else {
+    toast(`上传完成：${successCount} 成功，${pending.length - successCount} 失败`, '');
+  }
+
+  uploading = false;
+  setTimeout(() => { prog.classList.remove('show'); fill.style.width = '0%'; }, 1500);
+  updateToolbar();
+}
+
+function copyLink(url) {
+  navigator.clipboard.writeText(url).then(() => toast('链接已复制！', 'ok'));
+}
+
+// ---- Events ----
+document.getElementById('pickFilesBtn').onclick = e => { e.stopPropagation(); document.getElementById('fileIn').click(); };
+document.getElementById('pickFolderBtn').onclick = e => { e.stopPropagation(); document.getElementById('folderIn').click(); };
+document.getElementById('addFilesBtn').onclick = () => document.getElementById('fileIn').click();
+document.getElementById('addFolderBtn').onclick = () => document.getElementById('folderIn').click();
+
+document.getElementById('fileIn').onchange = e => { addFiles([...e.target.files]); e.target.value = ''; };
+document.getElementById('folderIn').onchange = e => {
+  const files = [...e.target.files];
+  // webkitRelativePath gives us the folder structure
+  for (const f of files) {
+    if (f.size > MAX_SIZE) { toast(`"${f.name}" 超过 50MB，已跳过`, 'err'); continue; }
+    const id = ++idSeq;
+    queue.push({ file: f, path: f.webkitRelativePath || f.name, id, status: 'pending' });
+    renderItem(queue[queue.length - 1]);
+  }
+  updateToolbar();
+  e.target.value = '';
+};
+
+document.getElementById('clearBtn').onclick = () => {
+  queue = [];
+  document.getElementById('fileList').innerHTML = '';
+  updateToolbar();
+};
+
+document.getElementById('upBtn').onclick = uploadAll;
+
+// Drag & drop
 const dz = document.getElementById('dz');
 dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
-dz.addEventListener('dragleave', () => dz.classList.remove('over'));
-dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); });
-document.getElementById('rmBtn').addEventListener('click', () => {
-  pickedFile = null;
-  document.getElementById('selFile').classList.remove('show');
-  document.getElementById('upBtn').classList.remove('show');
-  document.getElementById('fileIn').value = '';
+dz.addEventListener('dragleave', e => { if (!dz.contains(e.relatedTarget)) dz.classList.remove('over'); });
+dz.addEventListener('drop', async e => {
+  e.preventDefault(); dz.classList.remove('over');
+  await addFromDataTransfer(e.dataTransfer);
 });
 
-document.getElementById('upBtn').addEventListener('click', async () => {
-  if (!pickedFile) return;
-  const btn = document.getElementById('upBtn');
-  btn.disabled = true; btn.textContent = '上传中...';
-  const prog = document.getElementById('prog');
-  prog.classList.add('show');
-  document.getElementById('progFill').style.width = '20%';
-  document.getElementById('progLabel').textContent = '上传中...';
-
-  try {
-    const fd = new FormData();
-    fd.append('file', pickedFile);
-
-    const resp = await fetch(WORKER + '/upload', { method: 'POST', body: fd });
-    document.getElementById('progFill').style.width = '100%';
-    if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`); }
-    const { url } = await resp.json();
-    const vUrl = viewUrl(url);
-
-    document.getElementById('resLink').value = vUrl;
-    document.getElementById('viewBtn').href = vUrl;
-    document.getElementById('result').classList.add('show');
-  } catch (e) {
-    toast('上传失败：' + e.message, 'err');
-  } finally {
-    btn.disabled = false; btn.innerHTML = '&#128640; 再上传一个';
-    setTimeout(() => { prog.classList.remove('show'); document.getElementById('progFill').style.width = '0%'; }, 800);
-  }
-});
-
-document.getElementById('cpBtn').addEventListener('click', () => {
-  navigator.clipboard.writeText(document.getElementById('resLink').value).then(() => toast('链接已复制！', 'ok'));
+// Also support dropping on the whole card
+document.querySelector('.card').addEventListener('dragover', e => e.preventDefault());
+document.querySelector('.card').addEventListener('drop', async e => {
+  e.preventDefault();
+  await addFromDataTransfer(e.dataTransfer);
 });
 
 function toast(msg, type = '') {
   const el = document.getElementById('toast');
   el.textContent = msg; el.className = `toast ${type} show`;
-  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2800);
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 3000);
 }
 </script>
 </body>
