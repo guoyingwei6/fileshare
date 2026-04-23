@@ -156,13 +156,12 @@ function render() {
 
   // Breadcrumb
   let bc = `<div class="breadcrumb">
-    <span class="bc-item" onclick="navigate([])">&#128194; 根目录</span>`;
+    <span class="bc-item" data-nav="[]">&#128194; 根目录</span>`;
   for (let i = 0; i < currentPath.length; i++) {
-    const path = currentPath.slice(0, i + 1);
     if (i < currentPath.length - 1) {
-      bc += `<span class="bc-sep">/</span><span class="bc-item" onclick="navigate(${JSON.stringify(path)})">${currentPath[i]}</span>`;
+      bc += `<span class="bc-sep">/</span><span class="bc-item" data-nav="${encodeNav(currentPath.slice(0,i+1))}">${esc(currentPath[i])}</span>`;
     } else {
-      bc += `<span class="bc-sep">/</span><span class="bc-cur">${currentPath[i]}</span>`;
+      bc += `<span class="bc-sep">/</span><span class="bc-cur">${esc(currentPath[i])}</span>`;
     }
   }
   bc += '</div>';
@@ -186,10 +185,10 @@ function render() {
 
   for (const d of dirs) {
     const subFiles = countFiles(node.dirs[d]);
-    items += `<div class="tree-item folder" onclick="navigate(${JSON.stringify([...currentPath, d])})">
+    items += `<div class="tree-item folder" data-nav="${encodeNav([...currentPath, d])}">
       <span class="ti-icon">&#128193;</span>
       <div class="ti-info">
-        <div class="ti-name folder">${d}</div>
+        <div class="ti-name folder">${esc(d)}</div>
         <div class="ti-meta">${subFiles} 个文件</div>
       </div>
     </div>`;
@@ -197,22 +196,40 @@ function render() {
 
   for (const f of files) {
     const vUrl = viewUrl(f.url);
-    items += `<div class="tree-item">
+    items += `<div class="tree-item" data-url="${esc(vUrl)}" data-raw="${esc(f.url)}" data-name="${esc(f.name)}">
       <span class="ti-icon">${fileIcon(f.name)}</span>
       <div class="ti-info">
-        <div class="ti-name">${f.name}</div>
+        <div class="ti-name">${esc(f.name)}</div>
         <div class="ti-meta">${fmtSize(f.size)}</div>
       </div>
       <div class="ti-actions">
-        <button class="btn-sm" onclick="event.stopPropagation();copyLink('${vUrl}')">复制链接</button>
-        <a class="btn-sm" href="${f.url}?dl=1" download="${f.name}" onclick="event.stopPropagation()">下载</a>
-        <a class="btn-sm" href="${vUrl}" target="_blank" onclick="event.stopPropagation()">预览</a>
+        <button class="btn-sm btn-cp-link">复制链接</button>
+        <a class="btn-sm" href="${esc(f.url)}?dl=1" download="${esc(f.name)}">下载</a>
+        <a class="btn-sm" href="${esc(vUrl)}" target="_blank">预览</a>
       </div>
     </div>`;
   }
 
   card.innerHTML = bc + (currentPath.length === 0 ? stats : '') + items;
+
+  // Bind events after render
+  card.querySelectorAll('[data-nav]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      navigate(JSON.parse(decodeNav(el.dataset.nav)));
+    });
+  });
+  card.querySelectorAll('.btn-cp-link').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      copyLink(btn.closest('.tree-item').dataset.url);
+    });
+  });
 }
+
+function encodeNav(path) { return encodeURIComponent(JSON.stringify(path)); }
+function decodeNav(s) { return decodeURIComponent(s); }
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 function countFiles(node) {
   let n = node.files.length;
