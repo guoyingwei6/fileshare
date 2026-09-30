@@ -189,6 +189,10 @@
 <script>
 const WORKER = 'https://fileshare-r2.guoyingwei6.workers.dev';
 const MAX_SIZE = 50 * 1024 * 1024;
+function uploadKey() {
+  if (!localStorage.fs_admin_key) localStorage.fs_admin_key = (prompt('请输入上传密码') || '').trim();
+  return localStorage.fs_admin_key;
+}
 
 const ICONS = {
   html:'&#127758;', htm:'&#127758;',
@@ -373,6 +377,8 @@ function updateToolbar() {
 async function uploadAll() {
   const pending = queue.filter(i => i.status === 'pending');
   if (!pending.length) return;
+  const key = uploadKey();
+  if (!key) return;
   uploading = true;
   document.getElementById('upBtn').disabled = true;
   document.getElementById('upBtn').classList.remove('show');
@@ -392,11 +398,13 @@ async function uploadAll() {
     try {
       const fd = new FormData();
       fd.append('file', item.file);
+      fd.append('adminKey', key);
       if (item.folderKey) {
         fd.append('folderKey', item.folderKey);
         fd.append('filePath', item.filePath);
       }
       const resp = await fetch(WORKER + '/upload', { method: 'POST', body: fd });
+      if (resp.status === 401) delete localStorage.fs_admin_key;
       if (!resp.ok) { const e = await resp.json(); throw new Error(e.error || `HTTP ${resp.status}`); }
       const { url } = await resp.json();
       item.status = 'done';

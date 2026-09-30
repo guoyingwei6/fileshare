@@ -5,7 +5,6 @@ const CORS = {
 };
 
 const ADMIN_MAX = 200 * 1024 * 1024;  // 200MB for admin
-const ANON_MAX  =  50 * 1024 * 1024;  //  50MB for anonymous
 
 export default {
   async fetch(request, env) {
@@ -54,11 +53,10 @@ async function handleUpload(request, env, url) {
   if (!file || typeof file === 'string') return json(400, { error: 'No file provided' });
 
   const adminKey = formData.get('adminKey') || '';
-  const isAdmin = env.ADMIN_KEY && adminKey === env.ADMIN_KEY;
-  const maxSize = isAdmin ? ADMIN_MAX : ANON_MAX;
+  if (!env.ADMIN_KEY || adminKey !== env.ADMIN_KEY) return json(401, { error: '上传密码错误' });
 
-  if (file.size > maxSize) {
-    return json(413, { error: `文件过大（最大 ${Math.round(maxSize / 1024 / 1024)}MB）` });
+  if (file.size > ADMIN_MAX) {
+    return json(413, { error: `文件过大（最大 ${Math.round(ADMIN_MAX / 1024 / 1024)}MB）` });
   }
 
   // Folder upload: folderKey + filePath provided
