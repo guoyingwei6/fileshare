@@ -83,7 +83,7 @@
       font-size: 12px; color: var(--muted); white-space: nowrap;
     }
 
-    .file-grid { display: grid; gap: 10px; }
+    .file-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
     .file-card {
       display: flex; align-items: center; gap: 12px;
       padding: 12px 14px; border: 1.5px solid var(--border);
@@ -256,7 +256,7 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
 function showManager() {
   document.getElementById('loginPanel').style.display = 'none';
   document.getElementById('managerPanel').style.display = '';
-  document.getElementById('loginBadge').textContent = '&#10003; 已登录';
+  document.getElementById('loginBadge').textContent = '✓ 已登录';
   document.getElementById('loginBadge').className = 'badge-login';
   document.getElementById('logoutBtn').style.display = '';
   renderFiles(allFiles);
