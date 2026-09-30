@@ -130,6 +130,15 @@
     .toast.show { transform: translateX(-50%) translateY(0); }
     .toast.ok { background: var(--green); }
     .toast.err { background: var(--red); }
+    header, .logo, .hdr-right, .btn-sm-hdr, .badge-login, .badge-logout { white-space: nowrap; }
+    @media (max-width: 640px) {
+      body { padding-left: 10px; padding-right: 10px; }
+      header { flex-wrap: wrap; gap: 10px; }
+      .card { padding: 14px; }
+      .file-card { flex-wrap: wrap; }
+      .file-card-info { flex-basis: calc(100% - 40px); }
+      .file-card-btns { width: 100%; justify-content: flex-end; }
+    }
   </style>
 </head>
 <body>
